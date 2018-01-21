@@ -1,0 +1,63 @@
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="author" content="wujingchao92@gmail.com"/>
+    <meta name="description" content="关于&lt;&lt;Android开发艺术探索&gt;&gt;读书笔记总结"/>
+    
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/prettify/tomorrow.css">
+    <script src="/js/jquery-2.1.4.min.js"></script>
+    <script src="/js/raphael-min.js"></script>
+    <script src="/js/underscore-min.js"></script>
+    <script src="/js/sequence-diagram-min.js"></script>
+    <script src="/js/flowchart-latest.js"></script>
+    <script src="/prettify/prettify.js"></script>
+    <script src="/js/common.js"></script>
+    
+    
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/>
+    
+    
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-71897482-1', 'auto');
+      ga('send', 'pageview');
+    </script>
+
+    
+    <title>关于&lt;&lt;Android开发艺术探索&gt;&gt;读书笔记总结</title>
+</head>
+
+
+<body>
+
+<h3 id="关于-《Android开发艺术探索》-读书笔记总结"><a href="#关于-《Android开发艺术探索》-读书笔记总结" class="headerlink" title="关于 《Android开发艺术探索》 读书笔记总结"></a>关于 《Android开发艺术探索》 读书笔记总结</h3><p>　　一月份买的书断断续续花了两个月业余的时间才读完，这本书呢，里面讲的很多东西不够深入，如果把里面的东西都展开来讲那绝不是一本书能够讲的完的，点到为止，这应该也是作者的用意，剩下的得靠读者自己研究源码或者相关的博客进行进一步学习。<br>期间花了大量的时间去拓展里面的知识点，例如四大组件的工作过程，里面只花了50页左右就讲完了，只是讲了一个概要，里面的流程确实比较复杂，把老罗的博客和相关源码都看了好几遍才有一个比较清晰的认识，主要就是集中在AMS的源码，AMS就像Android应用层的管家，帮我们管理我们注册的四大组件，一切行为都在它的“监控之中”。<br>再如Android的消息机制的内容，没有涉及到JNI的层面，又找了老罗的博客反复看（C++没基础看的很模糊~~），等等，但是这些对于应用层开发学习的知识大部分足够了。书中我认为讲得最好的前面四章，还有Android的消息机制，虽然第二章Binder机制也没怎么说，但是如果要说清楚太难了，没有良好的操作系统的相关知识和C++基础，很难深刻理解Binder工作原理。我觉得吧，应用层开发理解这些对实际开发还是很有用处的，但是这些底层大部分都是难啃的“骨头”，不能操之过急，就像我这样没有C++基础的，也没有深入学习过操作系统相关的知识，但是这些是必须要恶补的，<a href="http://blog.csdn.net/luoshengyang/article/details/8923485" target="_blank" rel="external">老罗博客里面列出的书籍</a>，是一个很好的参考书单，想要这条路走更远，内功一定要过硬，要不应用层的东西每年变化是学不过来的。<br>　　记录这本书的读书笔记对应我来说也是一个很好的学习拓展提纲，里面的内容也会在学习的过程中有需要会不断补充，以及修改，在这里就在列以下读书笔记的连接，方便自己查看，还有就是四大组件只分析了BroadcastReceiver和Service，后面会再腾出时间来整理。</p>
+<p><a href="/2016/01/01/Android开发艺术探索读书笔记-Activity的生命周期和启动模式/">Activity的生命周期和启动模式</a></p>
+<p><a href="/2016/01/04/Android开发艺术探索读书笔记-IPC机制/">IPC机制</a></p>
+<p><a href="/2016/01/09/Android开发艺术探索读书笔记-View的事件体系/">View的事件体系</a></p>
+<p><a href="/2016/01/10/Android开发艺术探索读书笔记-View的工作原理/">View的工作原理</a></p>
+<p><a href="/2016/01/17/Android开发艺术探索读书笔记-理解RemoteViews/">理解RemoteViews</a></p>
+<p><a href="/2016/01/19/Android开发艺术探索读书笔记-Android的Drawable/">Android的Drawable</a></p>
+<p><a href="/2016/01/21/Android开发艺术探索读书笔记-Android动画深入分析/">Android动画深入分析</a></p>
+<p><a href="/2016/01/23/Android开发艺术探索读书笔记-理解Window和WindowManager/">理解Window和WindowManager</a></p>
+<p><a href="/2016/01/31/Android开发艺术探索读书笔记-Android的消息机制/">Android的消息机制</a></p>
+<p><a href="/2016/02/01/Android开发艺术探索读书笔记-Android的线程和线程池/">Android的线程和线程池</a></p>
+<p><a href="/2016/02/03/Android开发艺术探索读书笔记-Bitmap的加载和Cache/">Bitmap的加载和Cache</a></p>
+<p><a href="/2016/02/04/Android开发艺术探索读书笔记-综合技术/">综合技术</a></p>
+<p><a href="/2016/02/10/Android开发艺术探索读书笔记-四大组件的工作过程之startService方式启动Service/">四大组件的工作过程之startService方式启动Service</a></p>
+<p><a href="/2016/02/10/Android开发艺术探索读书笔记-四大组件的工作过程之bindService方式启动Service/">四大组件的工作过程之bindService方式启动Service</a></p>
+<p><a href="/2016/02/17/Android开发艺术探索读书笔记-四大组件的工作过程之registerReceiver注册广播/">四大组件的工作过程之registerReceiver注册广播</a></p>
+<p><a href="/2016/02/18/Android开发艺术探索读书笔记-四大组件的工作过程之发送广播/">四大组件的工作过程之发送广播</a></p>
+<p><a href="/2016/02/24/Android开发艺术探索读书笔记-Android性能优化/">Android性能优化</a></p>
+<p><a href="/2016/02/24/Android开发艺术探索读书笔记-JNI和NDK编程/">JNI和NDK编程</a></p>
+
+
+
+
+</body>
+</html>

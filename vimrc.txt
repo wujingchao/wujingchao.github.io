@@ -1,0 +1,79 @@
+set nocompatible              " be iMproved, required
+filetype off                  " required
+
+"===========Vundle============
+set rtp+=~/.vim/bundle/Vundle.vim
+call vundle#begin()
+
+" let Vundle manage Vundle, required
+Plugin 'VundleVim/Vundle.vim'
+Plugin 'scrooloose/nerdtree'
+Plugin 'vim-airline/vim-airline'
+Plugin 'vim-airline/vim-airline-themes'
+Plugin 'octol/vim-cpp-enhanced-highlight'
+Plugin 'tpope/vim-markdown'
+Plugin 'jistr/vim-nerdtree-tabs'
+call vundle#end()            " required
+"===========Vundle============
+
+
+
+"==========NERDTree=========
+"open a NERDTree automatically when vim starts up
+"autocmd vimenter * NERDTree
+
+"open a NERDTree automatically when vim starts up if no files were specified
+"autocmd StdinReadPre * let s:std_in=1
+"autocmd VimEnter * if argc() == 0 && !exists("s:std_in") | NERDTree | endif
+
+"close vim if the only window left open is a NERDTree
+"autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
+
+map <C-e> :NERDTreeToggle<CR>
+
+let NERDTreeWinSize=32
+let NERDTreeShowHidden=1
+let NERDTreeMinimalUI=1
+let NERDTreeAutoDeleteBuffer=1
+"==========NERDTree=========
+
+
+"==========Airline=========
+let g:airline_theme='jellybeans'
+"==========Airline=========
+
+"===========vim-cpp-enhanced-highlight===========
+syntax keyword cppSTLtype initializer_list
+"===========vim-cpp-enhanced-highlight===========
+
+"===========Vim Markdown===========
+autocmd BufNewFile,BufReadPost *.md set filetype=markdown
+let g:markdown_fenced_languages = ['html', 'python', 'bash=sh','java']
+"===========Vim Markdown===========
+
+"==========Common=========
+set laststatus=2
+set ruler
+set number
+set cursorline
+set hlsearch
+set nowrap
+set gcr=a:block-blinkon0
+
+set guioptions-=l
+set guioptions-=L
+set guioptions-=r
+set guioptions-=R
+set guioptions-=m
+set guioptions-=T
+
+syntax enable
+syntax on
+
+filetype indent on
+set expandtab
+set tabstop=4
+set shiftwidth=4
+set softtabstop=4
+"==========Common=========
+
