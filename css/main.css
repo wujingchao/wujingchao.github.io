@@ -1,11 +1,18 @@
 body {
     font-family: "lucida grande", "lucida sans unicode", lucida, helvetica, "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif;
-    font-size: 17px;
-    /* margin: 2% 20% 5% 20%; */
+    font-size: 18px;
     padding: 2% 5% 5% 5%;
-    /* width: 50%; */
     line-height: 150%;
     border: 1px solid LightGrey;
+}
+
+@media (min-width: 992px) {  
+    body {
+        margin: auto;
+        margin-top: 2%;
+        margin-bottom: 2%;
+        width: 60%;
+    }
 }
 
 p {
