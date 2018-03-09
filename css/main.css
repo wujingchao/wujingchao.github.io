@@ -1,8 +1,8 @@
 body {
     font-family: "lucida grande", "lucida sans unicode", lucida, helvetica, "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif;
-    font-size: 18px;
+    font-size: 17px;
     padding: 2% 5% 5% 5%;
-    line-height: 150%;
+    line-height: 1.7;
     border: 1px solid LightGrey;
 }
 
@@ -11,7 +11,7 @@ body {
         margin: auto;
         margin-top: 2%;
         margin-bottom: 2%;
-        width: 60%;
+        width: 55%;
     }
 }
 
@@ -86,20 +86,6 @@ a {
 a:hover {
 	background-color: LightGrey;
 }
-
-
-/* img {
-    display: block;
-    box-shadow: 0 0 10px #555;
-    border-radius: 6px;
-    margin-left: auto;
-    margin-right: auto;
-    margin-top: 10px;
-    margin-bottom: 10px;
-    -webkit-box-shadow: 0 0 10px #555;
-} */
-
-/* img{ width: 100%; height: auto;max-width: 100%; display: block; }  */
 
 img {
   display: block;
