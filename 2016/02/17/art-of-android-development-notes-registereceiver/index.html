@@ -359,5 +359,24 @@ void removeReceiverLocked(ReceiverList rl) {
 
 
 
+    <div id="container"></div>
+    <link rel="stylesheet" href="https://imsun.github.io/gitment/style/default.css">
+    <script src="https://imsun.github.io/gitment/dist/gitment.browser.js"></script>
+    <script>
+    var gitment = new Gitment({
+      id: '页面 ID', // 可选。默认为 location.href
+      owner: 'wujingchao',
+      repo: 'https://github.com/wujingchao/wujingchao.github.io',
+      oauth: {
+        client_id: '47d1b52e1d707849ef2e',
+        client_secret: 'f976ae209ea1ebd5d94c6ac60b67f854a9b65e51',
+      },
+    })
+    gitment.render('container')
+    </script>
+
+
+
+
 </body>
 </html>
