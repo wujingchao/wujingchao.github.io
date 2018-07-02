@@ -15,6 +15,9 @@
     <script src="/js/flowchart-latest.js"></script>
     <script src="/prettify/prettify.js"></script>
     <script src="/js/common.js"></script>
+    <script src="/js/gitment.browser.js"></script>
+    <link rel="stylesheet" href="/css/default.css">
+
     <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/>
     
     
@@ -62,24 +65,6 @@ public static void setDefaultUncaughtExceptionHandler(UncaughtExceptionHandler h
 </code></pre><p>之前很多应用采用插件化机制来动态加载部分的dex，通过将dex拆分成多个dex，一定程度上解决了方法越界的问题，但是插件化是一套重量级的技术方案，兼容问题较多，不是很好解决方法数越界的方案。<br>Google在2014年提出了multidex的解决方案，能够很好解决方法数越界的问题。</p>
 <h4 id="Android动态加载技术"><a href="#Android动态加载技术" class="headerlink" title="Android动态加载技术"></a>Android动态加载技术</h4><h4 id="反编译初步"><a href="#反编译初步" class="headerlink" title="反编译初步"></a>反编译初步</h4><p>使用apkool,dex2jar,jd-gui反编译apk</p>
 
-
-
-
-    <div id="container"></div>
-    <link rel="stylesheet" href="https://imsun.github.io/gitment/style/default.css">
-    <script src="https://imsun.github.io/gitment/dist/gitment.browser.js"></script>
-    <script>
-    var gitment = new Gitment({
-
-      owner: 'wujingchao',
-      repo: 'wujingchao.github.io',
-      oauth: {
-        client_id: '47d1b52e1d707849ef2e',
-        client_secret: 'f976ae209ea1ebd5d94c6ac60b67f854a9b65e51',
-      },
-    })
-    gitment.render('container')
-    </script>
 
 
 

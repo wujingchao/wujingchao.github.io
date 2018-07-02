@@ -15,6 +15,9 @@
     <script src="/js/flowchart-latest.js"></script>
     <script src="/prettify/prettify.js"></script>
     <script src="/js/common.js"></script>
+    <script src="/js/gitment.browser.js"></script>
+    <link rel="stylesheet" href="/css/default.css">
+
     <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/>
     
     
@@ -259,24 +262,6 @@ public void updateAppWidget(int[] appWidgetIds, RemoteViews views) {
 </blockquote>
 <p>RemoteViews的其他用途就是进程间更新View，例如Service和Activity不在同一个进程，有Service更新Activity的需求，就可以使用RemoteViews，感觉实际开发中不是很常用，具体参考作者的<a href="https://github.com/singwhatiwanna/android-art-res/blob/master/Chapter_5/src/com/ryg/chapter_5/MainActivity.java" target="_blank" rel="external">示例代码</a>, 核心就是通过Intent的Extras存储我们的添加Action的RemoteViews，在接收方获取这个对象，调用apply或reapply就可以得到或者更新View。</p>
 
-
-
-
-    <div id="container"></div>
-    <link rel="stylesheet" href="https://imsun.github.io/gitment/style/default.css">
-    <script src="https://imsun.github.io/gitment/dist/gitment.browser.js"></script>
-    <script>
-    var gitment = new Gitment({
-
-      owner: 'wujingchao',
-      repo: 'wujingchao.github.io',
-      oauth: {
-        client_id: '47d1b52e1d707849ef2e',
-        client_secret: 'f976ae209ea1ebd5d94c6ac60b67f854a9b65e51',
-      },
-    })
-    gitment.render('container')
-    </script>
 
 
 

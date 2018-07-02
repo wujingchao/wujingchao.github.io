@@ -15,6 +15,9 @@
     <script src="/js/flowchart-latest.js"></script>
     <script src="/prettify/prettify.js"></script>
     <script src="/js/common.js"></script>
+    <script src="/js/gitment.browser.js"></script>
+    <link rel="stylesheet" href="/css/default.css">
+
     <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/>
     
     
@@ -608,24 +611,6 @@ private final void deliverToRegisteredReceiverLocked(BroadcastRecord r,
 </code></pre><p>从有序广播集合里面取得一个接收者，判断是静态注册的广播还是动态注册的广播，如果是动态注册的广播，那么就是有序广播，直接向客户端逐个分发。</p>
 <p>如果是静态注册的广播，先判断接受者的进程是否存在，如果存在就不用开启进程。如果不存在，开启进程处理,并将mPendingBroadcast赋值,等待进程启动之后向AMS发起attachApplication请求，再处理放到mPendingBroadcast的广播。</p>
 
-
-
-
-    <div id="container"></div>
-    <link rel="stylesheet" href="https://imsun.github.io/gitment/style/default.css">
-    <script src="https://imsun.github.io/gitment/dist/gitment.browser.js"></script>
-    <script>
-    var gitment = new Gitment({
-
-      owner: 'wujingchao',
-      repo: 'wujingchao.github.io',
-      oauth: {
-        client_id: '47d1b52e1d707849ef2e',
-        client_secret: 'f976ae209ea1ebd5d94c6ac60b67f854a9b65e51',
-      },
-    })
-    gitment.render('container')
-    </script>
 
 
 

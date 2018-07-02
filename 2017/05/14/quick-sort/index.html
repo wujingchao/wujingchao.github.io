@@ -15,6 +15,9 @@
     <script src="/js/flowchart-latest.js"></script>
     <script src="/prettify/prettify.js"></script>
     <script src="/js/common.js"></script>
+    <script src="/js/gitment.browser.js"></script>
+    <link rel="stylesheet" href="/css/default.css">
+
     <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/>
     
     
@@ -75,24 +78,6 @@
 <p>然后再恢复划分的子集，让枢纽元素之前的子集和枢纽元素之后的子集分别递归调用排序，递归的终止条件就是子集只有一个元素的时候，这时子集当然是有序的。这样就完成了对整个数组的排序。</p>
 <p>对于快速排序排序还有一些复杂的细节，比如枢纽元素的选择等。关于时间复杂度与空间复杂度的分析可以参考<a href="https://zh.wikipedia.org/wiki/快速排序" target="_blank" rel="external">维基百科</a>。</p>
 
-
-
-
-    <div id="container"></div>
-    <link rel="stylesheet" href="https://imsun.github.io/gitment/style/default.css">
-    <script src="https://imsun.github.io/gitment/dist/gitment.browser.js"></script>
-    <script>
-    var gitment = new Gitment({
-
-      owner: 'wujingchao',
-      repo: 'wujingchao.github.io',
-      oauth: {
-        client_id: '47d1b52e1d707849ef2e',
-        client_secret: 'f976ae209ea1ebd5d94c6ac60b67f854a9b65e51',
-      },
-    })
-    gitment.render('container')
-    </script>
 
 
 

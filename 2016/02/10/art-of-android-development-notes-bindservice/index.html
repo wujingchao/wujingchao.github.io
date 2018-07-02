@@ -15,6 +15,9 @@
     <script src="/js/flowchart-latest.js"></script>
     <script src="/prettify/prettify.js"></script>
     <script src="/js/common.js"></script>
+    <script src="/js/gitment.browser.js"></script>
+    <link rel="stylesheet" href="/css/default.css">
+
     <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/>
     
     
@@ -935,24 +938,6 @@ private final void bringDownServiceLocked(ServiceRecord r) {
 }
 </code></pre><p>这个就和上面回调类似了，由于这个的Binder传递进来的为空，所以就会回调onServiceDisconnected方法。然后有通过Binder调用ApplicationThread的scheduleStopService方法，客户端找到对应Service实例，回调onDestroy方法。</p>
 
-
-
-
-    <div id="container"></div>
-    <link rel="stylesheet" href="https://imsun.github.io/gitment/style/default.css">
-    <script src="https://imsun.github.io/gitment/dist/gitment.browser.js"></script>
-    <script>
-    var gitment = new Gitment({
-
-      owner: 'wujingchao',
-      repo: 'wujingchao.github.io',
-      oauth: {
-        client_id: '47d1b52e1d707849ef2e',
-        client_secret: 'f976ae209ea1ebd5d94c6ac60b67f854a9b65e51',
-      },
-    })
-    gitment.render('container')
-    </script>
 
 
 

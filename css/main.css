@@ -107,3 +107,8 @@ hr {
 .diagram_flow {
     visibility: hidden;
 }
+
+.comment {
+    border: 1px solid #ccc;
+    padding: 10px
+}
