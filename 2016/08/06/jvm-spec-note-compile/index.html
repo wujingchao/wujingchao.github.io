@@ -6,7 +6,6 @@
     <script src="/js/less.min.js"></script>
     
     <link rel="stylesheet" href="/css/main.css">
-    <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/prettify/tomorrow.css">
     <script src="/js/jquery-2.1.4.min.js"></script>
     <script src="/js/raphael-min.js"></script>
@@ -17,6 +16,11 @@
     <script src="/js/common.js"></script>
     <script src="/js/gitment.browser.js"></script>
     <link rel="stylesheet" href="/css/default.css">
+    <link rel="stylesheet" href="/lib/fancybox/dist/jquery.fancybox.css">
+
+    <script src="/lib/fancybox/dist/jquery.fancybox.js"></script>
+
+    <link rel="stylesheet" href="/css/style.css">
 
     <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/>
     
@@ -59,19 +63,19 @@ Method void spin()
 8 iload_1
 9 bipush 100
 11 if_icmplt 5
-</code></pre><p><img src="http://o90rk2b64.bkt.clouddn.com/jvm_for_loop1.png" alt="jvm_for_loop1"></p>
+</code></pre><p><img src="/assets/jvm_for_loop1.png" alt="jvm_for_loop1"></p>
 <p>iconst_0操作码隐式包含了int类型0操作数，表示将int型0值压入操作数栈，这样不需要专门为入栈操作保存一个立即操作数的值，避免读取解析操作数，简单高效。如果使用bitpush 0将会增加一个字节的长度。类似指令还有 iconst_m1 iconst_1 …iconst_5。</p>
-<p><img src="http://o90rk2b64.bkt.clouddn.com/jvm_for_loop2.png" alt="jvm_for_loop2"></p>
+<p><img src="/assets/jvm_for_loop2.png" alt="jvm_for_loop2"></p>
 <p>istore_1同样隐式包含了int类型1操作数，表示从操作数栈栈顶弹出一个int类型的值，存放到第一个局部变量里面。(为什么是第一个呢，因为这是一个实例方法第0个局部变量永远是当前对象this)。</p>
-<p><img src="http://o90rk2b64.bkt.clouddn.com/jvm_for_loop3.png" alt="jvm_for_loop3"></p>
+<p><img src="/assets/jvm_for_loop3.png" alt="jvm_for_loop3"></p>
 <p>无条件跳转到偏移量为8的指令段执行，第一次循环量i的值是不加的</p>
-<p><img src="http://o90rk2b64.bkt.clouddn.com/jvm_for_loop4.png" alt="jvm_for_loop4"></p>
+<p><img src="/assets/jvm_for_loop4.png" alt="jvm_for_loop4"></p>
 <p>iload_1同样包含隐式操作数，表示将第1个局部变量的值加载到操作数栈，bitpush 100表示将int类型100值压入栈。</p>
-<p><img src="http://o90rk2b64.bkt.clouddn.com/jvm_for_loop5.png" alt="jvm_for_loop5"></p>
+<p><img src="/assets/jvm_for_loop5.png" alt="jvm_for_loop5"></p>
 <p>if_icmplt 5表示将操作数栈弹出，比较两位的值如果i小于100则跳转到偏移量为5的地方执行，否则执行return操作。</p>
-<p><img src="http://o90rk2b64.bkt.clouddn.com/jvm_for_loop6.png" alt="jvm_for_loop6"></p>
+<p><img src="/assets/jvm_for_loop6.png" alt="jvm_for_loop6"></p>
 <p>某些局部变量需要频繁操作，Java虚拟机也做了相应的支持，iinc 1 1的作用是对第1个局部变量加1操作。</p>
-<p><img src="http://o90rk2b64.bkt.clouddn.com/jvm_for_loop7.png" alt="jvm_for_loop7"></p>
+<p><img src="/assets/jvm_for_loop7.png" alt="jvm_for_loop7"></p>
 <p>然后继续重复上面的操作，直到局部变量的值操作100。</p>
 <p>Java虚拟机是基于栈架构设计的，大多数操作从当前栈幀的操作数栈取出1个或者多个操作数，如果指令有计算结果压入操作数栈。没调用一个方法都会创建一个新的栈幀，并创建对应方法所需的操作数栈和局部变量表。</p>
 <p>将上面的i的数据类型换成short，double有不同的编译代码，由于Java虚拟机指令不能超过256条，不可能对每种数据类型操作都尽善，例如缺乏对byte char short数据类型直接操作的支持，需要转换为int类型，代价就是将他们长度扩展为4字节。对于浮点型，缺少条件转移指令。</p>
@@ -467,6 +471,48 @@ public void setIndex();
       0: #57()
 </code></pre>
 
+
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
 
 
 

@@ -6,7 +6,6 @@
     <script src="/js/less.min.js"></script>
     
     <link rel="stylesheet" href="/css/main.css">
-    <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/prettify/tomorrow.css">
     <script src="/js/jquery-2.1.4.min.js"></script>
     <script src="/js/raphael-min.js"></script>
@@ -17,6 +16,11 @@
     <script src="/js/common.js"></script>
     <script src="/js/gitment.browser.js"></script>
     <link rel="stylesheet" href="/css/default.css">
+    <link rel="stylesheet" href="/lib/fancybox/dist/jquery.fancybox.css">
+
+    <script src="/lib/fancybox/dist/jquery.fancybox.js"></script>
+
+    <link rel="stylesheet" href="/css/style.css">
 
     <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/>
     
@@ -39,9 +43,9 @@
 <body>
 
 <h3 id="使用Fragment适配平板与手机"><a href="#使用Fragment适配平板与手机" class="headerlink" title="使用Fragment适配平板与手机"></a>使用Fragment适配平板与手机</h3><p>Fragment是Android 3.0版本引入的组件，而Android 3.0是基于平板设计的版本，可以猜想Fragment出现的原因之一就是适配大屏幕的Android设备。当然，也提供了support-v4的library支持更老的Android API。Android平板的Setting界面就是很好的案例，左边显示列表，右边显示对应列表项的详细内容。就像这样:</p>
-<p><img src="http://o90rk2b64.bkt.clouddn.com/fragment_large__list_detail.png" alt="fragment_large__list_detail"> </p>
+<p><img src="/assets/fragment_large__list_detail.png" alt="fragment_large__list_detail"> </p>
 <p>在小屏幕的设备上，一屏只能显示列表或者内容，所以就需要分开显示，就像这样:</p>
-<p><img src="http://o90rk2b64.bkt.clouddn.com/fragment_list_detail.png" alt="fragment_list_detail"></p>
+<p><img src="/assets/fragment_list_detail.png" alt="fragment_list_detail"></p>
 <p>完整的代码可以参考<a href="https://github.com/wujingchao/android-demo/tree/master/app/src/main/java/com/wujingchao/android/demo/app/fragment" target="_blank" rel="external">Github上的实现</a>，涉及的要点:</p>
 <h4 id="1-布局加载"><a href="#1-布局加载" class="headerlink" title="1.布局加载"></a>1.布局加载</h4><p>需要为屏幕的大小适配合适的布局文件，Android提供了<a href="https://developer.android.com/guide/topics/resources/providing-resources.html#QualifierRules" target="_blank" rel="external">限定符(Qualifer)</a>，可以根据屏幕宽高dp(Density-independent pixel)大小来适配，也可以根据屏幕的大小(Screen size)来适配。</p>
 <p>dp的换算公式: dp =  px / (dpi / 160)</p>
@@ -169,6 +173,48 @@
 <p><a href="https://developer.android.com/training/basics/fragments/fragment-ui.html" target="_blank" rel="external">https://developer.android.com/training/basics/fragments/fragment-ui.html</a></p>
 
 
+
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
 
 
 

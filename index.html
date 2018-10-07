@@ -39,6 +39,48 @@
 	</li>
 
 
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
+
 
 
     
@@ -47,6 +89,48 @@
 	    <a  href="/2018/07/02/android-optimize/">Android性能优化相关</a>
 	</li>
 
+
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
 
 
 
@@ -57,6 +141,48 @@
 	</li>
 
 
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
+
 
 
     
@@ -65,6 +191,48 @@
 	    <a  href="/2018/04/22/life/">两年前的一些感悟</a>
 	</li>
 
+
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
 
 
 
@@ -75,14 +243,47 @@
 	</li>
 
 
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
 
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
 
-    
-    
-	<li class="list-group-item title">
-	    <a  href="/2018/01/21/book/">Book</a>
-	</li>
-
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
 
 
 
@@ -93,6 +294,48 @@
 	</li>
 
 
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
+
 
 
     
@@ -101,6 +344,48 @@
 	    <a  href="/2016/09/05/reading/">读书计划</a>
 	</li>
 
+
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
 
 
 
@@ -111,6 +396,48 @@
 	</li>
 
 
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
+
 
 
     
@@ -119,6 +446,48 @@
 	    <a  href="/2016/07/31/jvm-spec-note-structure/">《JVM规范》(Java SE 7)笔记-----虚拟机结构</a>
 	</li>
 
+
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
 
 
 
@@ -129,6 +498,48 @@
 	</li>
 
 
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
+
 
 
     
@@ -137,6 +548,48 @@
 	    <a  href="/2016/06/26/percentlayout/">PercentLayout原理以及扩展</a>
 	</li>
 
+
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
 
 
 
@@ -147,6 +600,48 @@
 	</li>
 
 
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
+
 
 
     
@@ -155,6 +650,48 @@
 	    <a  href="/2016/06/05/the-programmer's-self-improvement-notes-review/">读书笔记-温故知新</a>
 	</li>
 
+
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
 
 
 
@@ -165,6 +702,48 @@
 	</li>
 
 
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
+
 
 
     
@@ -173,6 +752,48 @@
 	    <a  href="/2016/05/17/protobuf-data-structure/">Protobuf数据格式解析</a>
 	</li>
 
+
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
 
 
 
@@ -183,6 +804,48 @@
 	</li>
 
 
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
+
 
 
     
@@ -191,6 +854,48 @@
 	    <a  href="/2016/03/13/volley-load-image-synchronize-request-data/">Volley扩展:图片加载，同步方式请求数据</a>
 	</li>
 
+
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
 
 
 
@@ -201,6 +906,48 @@
 	</li>
 
 
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
+
 
 
     
@@ -209,6 +956,48 @@
 	    <a  href="/2016/02/25/android-source-compilation/">我的Android源码编译过程</a>
 	</li>
 
+
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
 
 
 
@@ -219,6 +1008,48 @@
 	</li>
 
 
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
+
 
 
     
@@ -227,6 +1058,48 @@
 	    <a  href="/2016/02/24/art-of-android-development-notes-performance/">读书笔记:Android性能优化</a>
 	</li>
 
+
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
 
 
 
@@ -237,6 +1110,48 @@
 	</li>
 
 
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
+
 
 
     
@@ -245,6 +1160,48 @@
 	    <a  href="/2016/02/17/art-of-android-development-notes-registereceiver/">读书笔记:registerReceiver注册广播</a>
 	</li>
 
+
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
 
 
 
@@ -255,6 +1212,48 @@
 	</li>
 
 
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
+
 
 
     
@@ -263,6 +1262,48 @@
 	    <a  href="/2016/02/10/art-of-android-development-notes-startservice/">读书笔记:startService方式启动Service</a>
 	</li>
 
+
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
 
 
 
@@ -273,6 +1314,48 @@
 	</li>
 
 
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
+
 
 
     
@@ -281,6 +1364,48 @@
 	    <a  href="/2016/02/03/art-of-android-development-notes-bitmap-cache/">读书笔记:Bitmap的加载和Cache</a>
 	</li>
 
+
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
 
 
 
@@ -291,6 +1416,48 @@
 	</li>
 
 
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
+
 
 
     
@@ -299,6 +1466,48 @@
 	    <a  href="/2016/01/31/art-of-android-development-notes-message-looper-handler/">读书笔记:Android的消息机制</a>
 	</li>
 
+
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
 
 
 
@@ -309,6 +1518,48 @@
 	</li>
 
 
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
+
 
 
     
@@ -317,6 +1568,48 @@
 	    <a  href="/2016/01/21/art-of-android-development-notes-animation/">读书笔记:Android动画深入分析</a>
 	</li>
 
+
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
 
 
 
@@ -327,6 +1620,48 @@
 	</li>
 
 
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
+
 
 
     
@@ -335,6 +1670,48 @@
 	    <a  href="/2016/01/17/art-of-android-development-notes-remoteviews/">读书笔记:理解RemoteViews</a>
 	</li>
 
+
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
 
 
 
@@ -345,6 +1722,48 @@
 	</li>
 
 
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
+
 
 
     
@@ -353,6 +1772,48 @@
 	    <a  href="/2016/01/09/art-of-android-development-notes-view-touchevent/">读书笔记:View的事件体系</a>
 	</li>
 
+
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
 
 
 
@@ -363,6 +1824,48 @@
 	</li>
 
 
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
+
 
 
     
@@ -371,6 +1874,48 @@
 	    <a  href="/2016/01/01/art-of-android-development-notes-activity-lifecircle-launchmode/">读书笔记:Activity的生命周期和启动模式</a>
 	</li>
 
+
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
 
 
 
@@ -381,6 +1926,48 @@
 	</li>
 
 
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
+
 
 
     
@@ -389,6 +1976,48 @@
 	    <a  href="/2015/03/16/ssh-public-key-login/">SSH基于公钥认证登录</a>
 	</li>
 
+
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
 
 
 
@@ -399,6 +2028,48 @@
 	</li>
 
 
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
+
 
 
     
@@ -408,6 +2079,48 @@
 	</li>
 
 
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
+
 
 
     
@@ -416,6 +2129,48 @@
 	    <a  href="/2015/02/23/new-start/">新的启程</a>
 	</li>
 
+
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
 
 
 

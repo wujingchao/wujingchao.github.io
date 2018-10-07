@@ -6,7 +6,6 @@
     <script src="/js/less.min.js"></script>
     
     <link rel="stylesheet" href="/css/main.css">
-    <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/prettify/tomorrow.css">
     <script src="/js/jquery-2.1.4.min.js"></script>
     <script src="/js/raphael-min.js"></script>
@@ -17,6 +16,11 @@
     <script src="/js/common.js"></script>
     <script src="/js/gitment.browser.js"></script>
     <link rel="stylesheet" href="/css/default.css">
+    <link rel="stylesheet" href="/lib/fancybox/dist/jquery.fancybox.css">
+
+    <script src="/lib/fancybox/dist/jquery.fancybox.js"></script>
+
+    <link rel="stylesheet" href="/css/style.css">
 
     <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/>
     
@@ -502,6 +506,48 @@
 是很多年前买的、一直没机会送给你。         
 </code></pre>
 
+
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
 
 
 

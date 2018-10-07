@@ -6,7 +6,6 @@
     <script src="/js/less.min.js"></script>
     
     <link rel="stylesheet" href="/css/main.css">
-    <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/prettify/tomorrow.css">
     <script src="/js/jquery-2.1.4.min.js"></script>
     <script src="/js/raphael-min.js"></script>
@@ -17,6 +16,11 @@
     <script src="/js/common.js"></script>
     <script src="/js/gitment.browser.js"></script>
     <link rel="stylesheet" href="/css/default.css">
+    <link rel="stylesheet" href="/lib/fancybox/dist/jquery.fancybox.css">
+
+    <script src="/lib/fancybox/dist/jquery.fancybox.js"></script>
+
+    <link rel="stylesheet" href="/css/style.css">
 
     <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/>
     
@@ -43,7 +47,7 @@
 </blockquote>
 <p>RecyclerView可以说是ListView和GridView的升级版本，提供了ListView和GridView的基础功能，并且有良好的扩展性，比如可以控制列表的布局和动画。该组件定制型太强，所以相对于ListView提出了很多新概念，刚接触可能会觉得比较复杂。</p>
 <p>先来看下效果图：</p>
-<p><img src="http://o90rk2b64.bkt.clouddn.com/recyclerviewdemo.png" alt="瀑布流"></p>
+<p><img src="/assets/recyclerviewdemo.png" alt="瀑布流"></p>
 <p>与RecyclerView相关的重要基础类:</p>
 <ul>
 <li><p>RecyclerView.LayoutManager：控制布局,提供的实现有LinearLayoutManager,GridLayoutManager,StaggeredGridLayoutManager。LinearLayoutManager提供类似ListView的列表布局，并且可以控制列表的方向。GridLayoutManager提供了类似GridView的列表布局。Staggered的意思是错列的，StaggeredGridLayoutManager继承GridLayoutManager，允许宽高不相等，所以可以用来实现瀑布流的布局。</p>
@@ -232,6 +236,48 @@ public class GridSpacingItemDecoration extends RecyclerView.ItemDecoration {
 <p><a href="https://developer.android.com/training/material/lists-cards.html" target="_blank" rel="external">https://developer.android.com/training/material/lists-cards.html</a></p>
 
 
+
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
 
 
 

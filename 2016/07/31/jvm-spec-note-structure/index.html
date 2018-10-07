@@ -6,7 +6,6 @@
     <script src="/js/less.min.js"></script>
     
     <link rel="stylesheet" href="/css/main.css">
-    <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/prettify/tomorrow.css">
     <script src="/js/jquery-2.1.4.min.js"></script>
     <script src="/js/raphael-min.js"></script>
@@ -17,6 +16,11 @@
     <script src="/js/common.js"></script>
     <script src="/js/gitment.browser.js"></script>
     <link rel="stylesheet" href="/css/default.css">
+    <link rel="stylesheet" href="/lib/fancybox/dist/jquery.fancybox.css">
+
+    <script src="/lib/fancybox/dist/jquery.fancybox.js"></script>
+
+    <link rel="stylesheet" href="/css/style.css">
 
     <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/>
     
@@ -46,7 +50,7 @@
 <p>returnAddress类型:被指令jsr,jsr_w,ret使用，从JDK7开始虚拟机不允许出现这几条指令，所以不用过于关注。returnAddress类型的值指向一条虚拟机指令的操作码，初衷是用来实现Java语言中的finally语句块。jsr与ret是一起使用的,jsr跳转到指定的offet位置，并将jsr下一条指令压入栈顶，就是retureAddress类型了，使用ret返回到指定的指令位置。<a href="https://www.zhihu.com/question/29056872" target="_blank" rel="external">参考:)</a></p>
 <h4 id="3-引用类型与值"><a href="#3-引用类型与值" class="headerlink" title="3.引用类型与值"></a>3.引用类型与值</h4><p>类类型(Class Types) 数组类型(Array Types) 接口类型(Interface Types)，分别对应类实例，数组实例，实现某个接口的实例。</p>
 <p>引用类型值有一个特殊的值null，当一个引用不指向任何对象时，它的值用null表示，可以转换为任意类型，Java虚拟机没有规定null的实现应用用怎样的编码。</p>
-<h4 id="4-运行时数据区"><a href="#4-运行时数据区" class="headerlink" title="4.运行时数据区"></a>4.运行时数据区</h4><p><img src="http://o90rk2b64.bkt.clouddn.com/Java%E8%99%9A%E6%8B%9F%E6%9C%BA%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE%E5%8C%BA.png" alt="运行时数据区"></p>
+<h4 id="4-运行时数据区"><a href="#4-运行时数据区" class="headerlink" title="4.运行时数据区"></a>4.运行时数据区</h4><p><img src="/assets/Java%E8%99%9A%E6%8B%9F%E6%9C%BA%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE%E5%8C%BA.png" alt="运行时数据区"></p>
 <p><strong>PC(Program Counter)寄存器</strong>：Java虚拟机中每一条线程都有自己的PC寄存器，用来保存当前方法的指令地址(也就是returenAddress类型的值)，如果方法是native的，则保存本地指针的值。 </p>
 <p><strong>Java虚拟机栈(Java Virtual Machine Stack)</strong>:Java虚拟机每一条线程都有私有的栈，用来存储局部变量与一些过程结果的地方，由栈幀(Frames)组成。Java虚拟机栈能够被实现成固定大小或者动态扩展模型。异常情形:(1)如果线程请求分配的栈容量超过Java虚拟机栈允许的最大容量，则抛出StackOverflowError异常 (2)如果Java虚拟机栈能够动态扩展，申请不到内存去创建新的栈，则抛出OutofMemoryError异常。</p>
 <p><strong>Java堆(Heap) </strong>:堆区是线程共享的区域，用分配类实例，数组对象的内存区域。Java虚拟机启动的时候就会被创建，并且分配的内存由GC(Garbage Collector)管理，这些对象无需也无法显示地被销毁。当创建的堆超过了GC能够提供的容量，则会抛OutofMemoryError异常。</p>
@@ -99,6 +103,48 @@
 </ul>
 
 
+
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
 
 
 
