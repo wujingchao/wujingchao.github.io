@@ -35,6 +35,57 @@
     
     
 	<li class="list-group-item title">
+	    <a  href="/2019/02/17/scheme-env/">MacOS Scheme编译环境搭建</a>
+	</li>
+
+
+<script>
+  //copy from http://tianma.space/post/2208308547/index.html
+
+  $(document).ready(function() {
+    wrapImageWithFancyBox();
+  });
+
+ /**
+ * Wrap images with fancybox support.
+ */
+ function wrapImageWithFancyBox() {
+     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+ 
+         var $image = $(this);
+         var imageCaption = $image.attr('alt');
+         var $imageWrapLink = $image.parent('a');
+ 
+         if ($imageWrapLink.size() < 1) {
+             var src = this.getAttribute('src');
+             var idx = src.lastIndexOf('?');
+             if (idx != -1) {
+                 src = src.substring(0, idx);
+             }
+             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+         }
+ 
+         $imageWrapLink.attr('data-fancybox', 'images');
+         if (imageCaption) {
+             $imageWrapLink.attr('data-caption', imageCaption);
+         }
+ 
+     });
+ 
+     $().fancybox({
+         selector : '[data-fancybox="images"]',
+         hash : false,
+         loop : false,
+         
+     });
+ }
+</script>
+
+
+
+    
+    
+	<li class="list-group-item title">
 	    <a  href="/2018/12/16/transition_delay/">Android锁屏下启动应用卡屏5秒的原因分析</a>
 	</li>
 
