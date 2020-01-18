@@ -1,8 +1,6 @@
 <html>
 <head>
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-    <meta name="author" content="wujingchao92@gmail.com"/>
-    <meta name="description" content="MTP协议总结与Android源码分析"/>
     <script src="/js/less.min.js"></script>
     
     <link rel="stylesheet" href="/css/main.css">
@@ -20,9 +18,9 @@
 
     <script src="/lib/fancybox/dist/jquery.fancybox.js"></script>
 
+
     <link rel="stylesheet" href="/css/style.css">
 
-    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/>
     
     
     <script>
@@ -139,48 +137,6 @@
 </code></pre><p>对照MTP SEPC文档的附录接口看代码比较简单，就是读取解析结构化数据或者封装需要发送的结构化数据，但是有一点需要特别注意，<br>处理发送文件与读取文件的操作不是在用户空间完成的，而是通过IOCTL，调用驱动接口在内核空间完成，这样会比较高效，不用再用户空间拷贝一份处理给内核空间，而是有内核空间直接发送。</p>
 
 
-
-<script>
-  //copy from http://tianma.space/post/2208308547/index.html
-
-  $(document).ready(function() {
-    wrapImageWithFancyBox();
-  });
-
- /**
- * Wrap images with fancybox support.
- */
- function wrapImageWithFancyBox() {
-     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
- 
-         var $image = $(this);
-         var imageCaption = $image.attr('alt');
-         var $imageWrapLink = $image.parent('a');
- 
-         if ($imageWrapLink.size() < 1) {
-             var src = this.getAttribute('src');
-             var idx = src.lastIndexOf('?');
-             if (idx != -1) {
-                 src = src.substring(0, idx);
-             }
-             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
-         }
- 
-         $imageWrapLink.attr('data-fancybox', 'images');
-         if (imageCaption) {
-             $imageWrapLink.attr('data-caption', imageCaption);
-         }
- 
-     });
- 
-     $().fancybox({
-         selector : '[data-fancybox="images"]',
-         hash : false,
-         loop : false,
-         
-     });
- }
-</script>
 
 
 

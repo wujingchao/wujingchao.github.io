@@ -23,7 +23,7 @@ a {
 }
 
 .title {
-    cursor: pointer;
+    /* cursor: pointer; */
 }
 
 li.title:hover {
@@ -51,4 +51,9 @@ li.title:hover {
 
 .panel-title {
     font-size: 17px;
+}
+
+.title-date {
+    font-size: 15px;
+    color:#969696
 }

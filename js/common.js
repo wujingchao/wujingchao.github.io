@@ -15,5 +15,43 @@ $(document).ready(function() {
             'line-width': 1.5,
           });
       }
+
+      wrapImageWithFancyBox();
 }); 
+
+    //copy from http://tianma.space/post/2208308547/index.html
+
+/**
+ * Wrap images with fancybox support.
+ */
+function wrapImageWithFancyBox() {
+    $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
+
+        var $image = $(this);
+        var imageCaption = $image.attr('alt');
+        var $imageWrapLink = $image.parent('a');
+
+        if ($imageWrapLink.size() < 1) {
+            var src = this.getAttribute('src');
+            var idx = src.lastIndexOf('?');
+            if (idx != -1) {
+                src = src.substring(0, idx);
+            }
+            $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
+        }
+
+        $imageWrapLink.attr('data-fancybox', 'images');
+        if (imageCaption) {
+            $imageWrapLink.attr('data-caption', imageCaption);
+        }
+
+    });
+
+    $().fancybox({
+        selector : '[data-fancybox="images"]',
+        hash : false,
+        loop : false,
+        
+    });
+}
 

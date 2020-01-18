@@ -1,8 +1,6 @@
 <html>
 <head>
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-    <meta name="author" content="wujingchao92@gmail.com"/>
-    <meta name="description" content="详解Socket编程---TCP_NODELAY选项"/>
     <script src="/js/less.min.js"></script>
     
     <link rel="stylesheet" href="/css/main.css">
@@ -20,9 +18,9 @@
 
     <script src="/lib/fancybox/dist/jquery.fancybox.js"></script>
 
+
     <link rel="stylesheet" href="/css/style.css">
 
-    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=2"/>
     
     
     <script>
@@ -112,48 +110,6 @@
 <p>另外HTTP2与HTTP协议不同，HTTP2是在一条TCP连接上进行所有HTTP请求，并且请求头部是压缩的就进一步加大了请求小分组的可能性，多个小分组HTTP请求并且分组大小的和小于MSS就会导致有延迟的现象，所以HTTP2的实现TCP_NODELAY选项是默认开启的。关于这点可以<a href="(https://http2.github.io/faq/#Will%20I%20need%20TCP_NODELAY%20for%20my%20HTTP/2%20connections">参考HTTP2对TCP_NODELAY的描述</a>)。</p>
 
 
-
-<script>
-  //copy from http://tianma.space/post/2208308547/index.html
-
-  $(document).ready(function() {
-    wrapImageWithFancyBox();
-  });
-
- /**
- * Wrap images with fancybox support.
- */
- function wrapImageWithFancyBox() {
-     $('img').not('.sidebar-image img').not('#author-avatar img').not(".mdl-menu img").each(function() {
- 
-         var $image = $(this);
-         var imageCaption = $image.attr('alt');
-         var $imageWrapLink = $image.parent('a');
- 
-         if ($imageWrapLink.size() < 1) {
-             var src = this.getAttribute('src');
-             var idx = src.lastIndexOf('?');
-             if (idx != -1) {
-                 src = src.substring(0, idx);
-             }
-             $imageWrapLink = $image.wrap('<a href="' + src + '"></a>').parent('a');
-         }
- 
-         $imageWrapLink.attr('data-fancybox', 'images');
-         if (imageCaption) {
-             $imageWrapLink.attr('data-caption', imageCaption);
-         }
- 
-     });
- 
-     $().fancybox({
-         selector : '[data-fancybox="images"]',
-         hash : false,
-         loop : false,
-         
-     });
- }
-</script>
 
 
 
