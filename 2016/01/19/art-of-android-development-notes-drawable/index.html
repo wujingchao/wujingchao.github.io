@@ -18,26 +18,28 @@
 
     <script src="/lib/fancybox/dist/jquery.fancybox.js"></script>
 
-
     <link rel="stylesheet" href="/css/style.css">
+
+    <script src="/js/av-min.js"></script>
+    <script src="/js/Valine.min.js"></script>
 
     
     
     <script>
-      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-      ga('create', 'UA-71897482-1', 'auto');
-      ga('send', 'pageview');
+        (function (i, s, o, g, r, a, m) {
+            i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+                (i[r].q = i[r].q || []).push(arguments)
+            }, i[r].l = 1 * new Date(); a = s.createElement(o),
+                m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
+        })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+        ga('create', 'UA-71897482-1', 'auto');
+        ga('send', 'pageview');
     </script>
-
+    
     
     <title>读书笔记:Android的Drawable</title>
     <meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=0.8, user-scalable=no">
 </head>
-
-
 <body>
 
 <h3 id="Android开发艺术探索-Android的Drawable"><a href="#Android开发艺术探索-Android的Drawable" class="headerlink" title="Android开发艺术探索:Android的Drawable"></a><a href="http://www.amazon.cn/Android%E5%BC%80%E5%8F%91%E8%89%BA%E6%9C%AF%E6%8E%A2%E7%B4%A2-%E4%BB%BB%E7%8E%89%E5%88%9A/dp/B014HV1X3K/ref=sr_1_1?ie=UTF8&amp;qid=1451616304&amp;sr=8-1&amp;keywords=Android%E5%BC%80%E5%8F%91%E8%89%BA%E6%9C%AF%E6%8E%A2%E7%B4%A2" target="_blank" rel="external">Android开发艺术探索</a>:Android的Drawable</h3><p>自定Drawable比自定义View的成本要低，使用非图片类型的Drawable有利于减少apk的体积。<br>可以通过 getIntrinsicWidth 和 getIntrinsicHeight 可已获取Drawable的内部宽高，并不是所有的Drawable都有内部宽高，例如ColorDrawable。</p>
@@ -273,20 +275,23 @@ drawable.setLevel(drawable.getLevel() + 1000);
 
 
 
-    <div id="container"></div>
-    <script>
-    var gitment = new Gitment({
-
-      owner: 'wujingchao',
-      repo: 'wujingchao.github.io',
-      oauth: {
-        client_id: '899ba367d035c5eb54d8',
-        client_secret: '9e15be0488f3f6cd4808271c47d3ea6637c3718b',
-      },
-    })
-    gitment.render('container')
-    </script>
-
+<div id="vcomments"></div>
+<script>
+  var notify = true;
+  var verify = true;
+  var visitor = true;
+  new Valine({
+    el: '#vcomments',
+    notify: notify,
+    verify: verify,
+    app_id: 'VwQJypi1ky6NE4odVKhwHRND-gzGzoHsz',
+    app_key: 'T6qaUhvNhS29B8I9uMViK5vG',
+    placeholder: 'ヾﾉ≧∀≦)o快来评论一下吧!',
+    avatar: 'hide',
+    pageSize: 10,
+    visitor: visitor
+  });
+</script>
 
 </body>
 </html>

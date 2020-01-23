@@ -18,26 +18,28 @@
 
     <script src="/lib/fancybox/dist/jquery.fancybox.js"></script>
 
-
     <link rel="stylesheet" href="/css/style.css">
+
+    <script src="/js/av-min.js"></script>
+    <script src="/js/Valine.min.js"></script>
 
     
     
     <script>
-      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-      ga('create', 'UA-71897482-1', 'auto');
-      ga('send', 'pageview');
+        (function (i, s, o, g, r, a, m) {
+            i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+                (i[r].q = i[r].q || []).push(arguments)
+            }, i[r].l = 1 * new Date(); a = s.createElement(o),
+                m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
+        })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+        ga('create', 'UA-71897482-1', 'auto');
+        ga('send', 'pageview');
     </script>
-
+    
     
     <title>快速排序的另一种简单写法</title>
     <meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=0.8, user-scalable=no">
 </head>
-
-
 <body>
 
 <h3 id="快速排序的另一种简单写法"><a href="#快速排序的另一种简单写法" class="headerlink" title="快速排序的另一种简单写法"></a>快速排序的另一种简单写法</h3><p>最近在看<a href="https://book.douban.com/subject/1139336/" target="_blank" rel="external">TCPL</a>，第四章的函数与程序结构里面有一个快速排序的例子，并且几句话就把快速排序总结了，非常精炼。快速排序利用的是分治的思想(Divide Conquer)，理解了分治，就能理解快排。这里记录一下，并且讲解一下程序的原理。</p>
@@ -83,20 +85,23 @@
 
 
 
-    <div id="container"></div>
-    <script>
-    var gitment = new Gitment({
-
-      owner: 'wujingchao',
-      repo: 'wujingchao.github.io',
-      oauth: {
-        client_id: '899ba367d035c5eb54d8',
-        client_secret: '9e15be0488f3f6cd4808271c47d3ea6637c3718b',
-      },
-    })
-    gitment.render('container')
-    </script>
-
+<div id="vcomments"></div>
+<script>
+  var notify = true;
+  var verify = true;
+  var visitor = true;
+  new Valine({
+    el: '#vcomments',
+    notify: notify,
+    verify: verify,
+    app_id: 'VwQJypi1ky6NE4odVKhwHRND-gzGzoHsz',
+    app_key: 'T6qaUhvNhS29B8I9uMViK5vG',
+    placeholder: 'ヾﾉ≧∀≦)o快来评论一下吧!',
+    avatar: 'hide',
+    pageSize: 10,
+    visitor: visitor
+  });
+</script>
 
 </body>
 </html>

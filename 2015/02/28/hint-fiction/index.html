@@ -18,26 +18,28 @@
 
     <script src="/lib/fancybox/dist/jquery.fancybox.js"></script>
 
-
     <link rel="stylesheet" href="/css/style.css">
+
+    <script src="/js/av-min.js"></script>
+    <script src="/js/Valine.min.js"></script>
 
     
     
     <script>
-      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-      ga('create', 'UA-71897482-1', 'auto');
-      ga('send', 'pageview');
+        (function (i, s, o, g, r, a, m) {
+            i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+                (i[r].q = i[r].q || []).push(arguments)
+            }, i[r].l = 1 * new Date(); a = s.createElement(o),
+                m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
+        })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+        ga('create', 'UA-71897482-1', 'auto');
+        ga('send', 'pageview');
     </script>
-
+    
     
     <title>三年收集的微小说</title>
     <meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=0.8, user-scalable=no">
 </head>
-
-
 <body>
 
 <p>非商业用途,如有侵权,请告知我,我会删除。(wujingchao92@gmail.com)</p>
@@ -506,20 +508,23 @@
 
 
 
-    <div id="container"></div>
-    <script>
-    var gitment = new Gitment({
-
-      owner: 'wujingchao',
-      repo: 'wujingchao.github.io',
-      oauth: {
-        client_id: '899ba367d035c5eb54d8',
-        client_secret: '9e15be0488f3f6cd4808271c47d3ea6637c3718b',
-      },
-    })
-    gitment.render('container')
-    </script>
-
+<div id="vcomments"></div>
+<script>
+  var notify = true;
+  var verify = true;
+  var visitor = true;
+  new Valine({
+    el: '#vcomments',
+    notify: notify,
+    verify: verify,
+    app_id: 'VwQJypi1ky6NE4odVKhwHRND-gzGzoHsz',
+    app_key: 'T6qaUhvNhS29B8I9uMViK5vG',
+    placeholder: 'ヾﾉ≧∀≦)o快来评论一下吧!',
+    avatar: 'hide',
+    pageSize: 10,
+    visitor: visitor
+  });
+</script>
 
 </body>
 </html>
