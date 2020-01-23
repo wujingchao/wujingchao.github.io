@@ -33,19 +33,33 @@
     </script>
 
     
-    <title>再谈Android系统的智能指针</title>
+    <title>再谈Android源码的C++智能指针</title>
     <meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=0.8, user-scalable=no">
 </head>
 
 
 <body>
 
-<h3 id="再谈Android系统的C-智能指针"><a href="#再谈Android系统的C-智能指针" class="headerlink" title="再谈Android系统的C++智能指针"></a>再谈Android系统的C++智能指针</h3><p>AOSP里面用到智能指针的地方太多，目前也有很多现成源码分析的文章，本文从引用的角度谈谈我对其的理解，尽量避免贴大量源代码，由于我平时写Java比较多，可能有纰漏，也感谢帮忙指出。</p>
+<h3 id="再谈Android源码的C-智能指针"><a href="#再谈Android源码的C-智能指针" class="headerlink" title="再谈Android源码的C++智能指针"></a>再谈Android源码的C++智能指针</h3><p>AOSP里面用到智能指针的地方太多，目前也有很多现成源码分析的文章，本文从引用的角度谈谈我对其的理解，尽量避免贴大量源代码，由于我平时写Java比较多，可能有纰漏，也感谢帮忙指出。</p>
 <h4 id="Java与C-对象的生命周期"><a href="#Java与C-对象的生命周期" class="headerlink" title="Java与C++对象的生命周期"></a>Java与C++对象的生命周期</h4><p>我们都知道，Java对象通过new关键字创建，之后就会再Java虚拟机的堆区创建一块内存区域，然后我们通过的类型变量去引用它，这个就是强引用。垃圾回收器(GC)会在适当的时刻，根据对象可达性(reachable)判断，是否回收相关的对象。</p>
 <p>….</p>
 
 
 
+
+    <div id="container"></div>
+    <script>
+    var gitment = new Gitment({
+
+      owner: 'wujingchao',
+      repo: 'wujingchao.github.io',
+      oauth: {
+        client_id: '899ba367d035c5eb54d8',
+        client_secret: '9e15be0488f3f6cd4808271c47d3ea6637c3718b',
+      },
+    })
+    gitment.render('container')
+    </script>
 
 
 </body>
