@@ -1,0 +1,71 @@
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <script src="/js/less.min.js"></script>
+    
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/prettify/tomorrow.css">
+    <script src="/js/jquery-2.1.4.min.js"></script>
+    <script src="/js/raphael-min.js"></script>
+    <script src="/js/underscore-min.js"></script>
+    <script src="/js/sequence-diagram-min.js"></script>
+    <script src="/js/flowchart-latest.js"></script>
+    <script src="/prettify/prettify.js"></script>
+    <script src="/js/common.js"></script>
+    <script src="/js/gitment.browser.js"></script>
+    <link rel="stylesheet" href="/css/default.css">
+    <link rel="stylesheet" href="/lib/fancybox/dist/jquery.fancybox.css">
+
+    <script src="/lib/fancybox/dist/jquery.fancybox.js"></script>
+
+    <link rel="stylesheet" href="/css/style.css">
+
+    
+    
+    <script>
+        (function (i, s, o, g, r, a, m) {
+            i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+                (i[r].q = i[r].q || []).push(arguments)
+            }, i[r].l = 1 * new Date(); a = s.createElement(o),
+                m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
+        })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+        ga('create', 'UA-71897482-1', 'auto');
+        ga('send', 'pageview');
+    </script>
+    
+    
+    <title>最简单的SSH内网穿透配置</title>
+    <meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=0.8, user-scalable=no">
+</head>
+<body>
+
+<h3 id="最简单的Ubuntu-SSH内网穿透配置"><a href="#最简单的Ubuntu-SSH内网穿透配置" class="headerlink" title="最简单的Ubuntu SSH内网穿透配置"></a>最简单的Ubuntu SSH内网穿透配置</h3><p>内网：家里或者公司的机器</p>
+<p>公网：云服务器</p>
+<p>外网：需要访问内网的机器</p>
+<h5 id="公网服务器配置"><a href="#公网服务器配置" class="headerlink" title="公网服务器配置"></a>公网服务器配置</h5><p>修改sshd配置/etc/ssh/sshd_config</p>
+<pre><code>GatewayPorts yes
+</code></pre><p>除了开放sshd用的端口，还需要开放一个[公网服务器开放端口]，用作转发数据</p>
+<h5 id="内网"><a href="#内网" class="headerlink" title="内网"></a>内网</h5><p>为了能够断开自动重连，安装autossh(ubuntu)</p>
+<pre><code>sudo apt-get install autossh
+</code></pre><p>与公网服务器建立连接通道</p>
+<pre><code>autossh -M [内网任意未使用端口] -NR [公网服务器开放端口]:127.0.0.1:[本地sshd端口] [公网服务器用户名]@[公网ip]
+
+//提示输入公网服务器密码
+</code></pre><p>-M 后面的这个参数端口貌似用echo service做监听重连的，没太看明白</p>
+<p>-N  Do not execute a remote command.  This is useful for just forwarding ports</p>
+<p>-R Specifies that connections to the given TCP port or Unix socket on the remote (server) host are to be forwarded to the local side</p>
+<p>这样配置好以后，外网连上的[公网服务器开放端口]的数据就会转发到内网的[本地sshd端口]</p>
+<h5 id="外网配置"><a href="#外网配置" class="headerlink" title="外网配置"></a>外网配置</h5><p>上面两部配置完成之后就可以远程ssh到内网了</p>
+<pre><code>ssh [内网用户名]@[公网ip] -p [公网服务器开放端口]
+//提示输入内网服务器密码
+</code></pre><p>使用ssh开启隧道代理：</p>
+<pre><code>ssh -nNTf -D [本地上网代理端口] [内网用户名]@[公网ip] -p [公网服务器开放端口]
+</code></pre><p>同样，可以使用autossh断连之后自动重连。需要把-nNTf参数放到后面，否则会将-f误认为是autossh的参数，无法提示输入密码：</p>
+<pre><code>autossh -M 0  -D 9987  user@111.229.60.126 -p 50609 -nNTf
+</code></pre><p>这样就开启了socket5协议代理，将浏览器或应用的代理设置为sockets://127.0.0.1:[本地上网代理端口]， 就可以成功穿透到内网了！</p>
+
+
+
+
+</body>
+</html>
