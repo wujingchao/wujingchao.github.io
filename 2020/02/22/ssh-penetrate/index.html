@@ -61,7 +61,7 @@
 </code></pre><p>使用ssh开启隧道代理：</p>
 <pre><code>ssh -nNTf -D [本地上网代理端口] [内网用户名]@[公网ip] -p [公网服务器开放端口]
 </code></pre><p>同样，可以使用autossh断连之后自动重连。需要把-nNTf参数放到后面，否则会将-f误认为是autossh的参数，无法提示输入密码：</p>
-<pre><code>autossh -M 0  -D 9987  user@111.229.60.126 -p 50609 -nNTf
+<pre><code>autossh -M 0  -D [本地上网代理端口]  [内网用户名]@[公网ip] -p [公网服务器开放端口] -nNTf
 </code></pre><p>这样就开启了socket5协议代理，将浏览器或应用的代理设置为sockets://127.0.0.1:[本地上网代理端口]， 就可以成功穿透到内网了！</p>
 
 
