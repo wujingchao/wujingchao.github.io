@@ -39,5 +39,21 @@
 </head>
 <body>
 
+<h3 id="阅读Binder代码的一些疑问"><a href="#阅读Binder代码的一些疑问" class="headerlink" title="阅读Binder代码的一些疑问"></a>阅读Binder代码的一些疑问</h3><p>1.BinderInternal.getContextObject(null)的时候，有没有发binder命令？</p>
+<p>有，会使用PING_TRANSACTION，检查ServieManger Binder对象是否还活着，如果还活着的话，就给上层返回一个BpBinder对象。</p>
+<p>2.Service将自己加到ServerManager里面，在Service里面存的是什么东西？</p>
+<p> 存放在ServiceManager维护的svcinfo的链表里，主要的信息有两个，一个是uint32类型的handle，以及Service的Name</p>
+<p> 那这个handle到底是什么东西，表示什么？</p>
+<p> BBinder对象的地址</p>
+<p> 3.对binder驱动做mmap系统调用的作用是什么？</p>
+<p> 将一页物理内存映射到内核的虚拟地址空间和进程的虚拟地址空间，并把该空闲的内存块加到binder_proc维护的链表里面。有其他进程往该进程发数据，驱动直接把其他进程空间的数据往这块内存拷贝，这样，都能该进程就可以直接访问该内存里面的数据。</p>
+<p> 4.Parcel.remove部分数据是怎么实现的?</p>
+<p> 5.应用的Binder线程是怎么启动的，在哪里启动的？</p>
+<p> 6.servicemanager以什么形式在系统中存在？</p>
+<p> 后台进程的形态，在内核启动的时候，解析init.rc脚本的时候，就把位于/system/bin/servicemanager可执行程序启动。</p>
+
+
+
+
 </body>
 </html>
