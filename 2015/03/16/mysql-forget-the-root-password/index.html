@@ -39,17 +39,5 @@
 </head>
 <body>
 
-<h3 id="Linux下mysql忘记root密码"><a href="#Linux下mysql忘记root密码" class="headerlink" title="Linux下mysql忘记root密码"></a>Linux下mysql忘记root密码</h3><p>/etc/my.conf的[mysqld]段加上skip-grant-tables</p>
-<pre><code>[mysqld]
-datadir=/var/lib/mysql
-socket=/var/lib/mysql/mysql.sock
-user=mysql
-old_passwords=1
-skip-grant-tables
-</code></pre><p>重启mysql服务就可以更新user标里面的password了<br>update mysql.user set password = password(‘root’) where user=root<br>就可以，然后还原/etc/my.conf</p>
-
-
-
-
 </body>
 </html>

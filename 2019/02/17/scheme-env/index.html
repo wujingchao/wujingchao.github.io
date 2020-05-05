@@ -39,33 +39,5 @@
 </head>
 <body>
 
-<h3 id="MacOS-Scheme编译环境搭建"><a href="#MacOS-Scheme编译环境搭建" class="headerlink" title="MacOS Scheme编译环境搭建"></a>MacOS Scheme编译环境搭建</h3><p>安装的环境是开源的<a href="https://cisco.github.io/ChezScheme/" target="_blank" rel="external">ChezScheme</a></p>
-<p>下载ChezScheme</p>
-<pre><code>git clone git@github.com:cisco/ChezScheme.git
-</code></pre><p>编译与安装：</p>
-<pre><code>./configure
-sudo make install
-</code></pre><p>安装完成之后就可以直接在Shell里面使用ChezScheme的命令行交互环境， Ctrl + D退出:</p>
-<p><img src="/assets/scheme-env1.png" alt="scheme-evn1"></p>
-<p>如果不使用交互式环境，还可以让解释器直接解释文件：</p>
-<p><img src="/assets/scheme-env2.png" alt="scheme-evn2"></p>
-<p>为了更方便学习，还可以将环境集成到vscode里面：</p>
-<p>安装支持语法高亮的插件 vscode-scheme:</p>
-<p><img src="/assets/scheme-env3.png" alt="scheme-evn3"></p>
-<p>支持快捷运行代码的插件 Code Runner:</p>
-<p><img src="/assets/scheme-env4.png" alt="scheme-evn4"></p>
-<p>配置Code Runner支持scheme：</p>
-<p>在菜单 Code -&gt; Preferences -&gt; Settings里面搜索Run Code找到 Executor Map By File Extension：</p>
-<p><img src="/assets/scheme-env5.png" alt="scheme-evn4"></p>
-<p>点击 Edit in settings.json，在这个文件里面加上scheme文件的后缀配置，然后保存：</p>
-<pre><code>    &quot;code-runner.executorMapByFileExtension&quot;: {
-        &quot;.ss&quot;: &quot;scheme --quiet &lt; $fullFileName&quot;
-    }
-</code></pre><p>在vscode里面新建ss后缀的scheme文件，点运行按钮就可以直接运行了，结果会在OUTPUT里面：</p>
-<p><img src="/assets/scheme-env6.png" alt="scheme-evn4"></p>
-
-
-
-
 </body>
 </html>
