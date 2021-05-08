@@ -2809,6 +2809,585 @@ fun sortColors(nums: IntArray): Unit {
     return if (found) s.substring(minStartIndex..minEndIndex) else &quot;&quot;
 }
 </code></pre>
+<p>Note: 注意t会有重复的子串</p>
+<h4 id="77-Combinations"><a href="#77-Combinations" class="headerlink" title="77. Combinations"></a>77. Combinations</h4><p>Given two integers n and k, return all possible combinations of k numbers out of the range [1, n].</p>
+<p>You may return the answer in any order.</p>
+<pre><code class="kotlin">val ret8 = mutableListOf&lt;List&lt;Int&gt;&gt;()
+
+fun combine(n: Int, k: Int): List&lt;List&lt;Int&gt;&gt; {
+    combineRecur(n, 1, k, mutableListOf())
+    return ret8
+}
+
+fun combineRecur(n: Int, start:Int, k: Int, path: MutableList&lt;Int&gt;){
+    if (k == 0) {
+        ret8.add(ArrayList(path))
+        return
+    }
+    for (i in start..n) {
+        path.add(i)
+        combineRecur(n, i + 1, k - 1, path)
+        path.removeAt(path.size - 1)
+    }
+}
+</code></pre>
+<h4 id="78-Subsets"><a href="#78-Subsets" class="headerlink" title="78. Subsets"></a>78. Subsets</h4><p>Given an integer array nums of unique elements, return all possible subsets (the power set).</p>
+<p>The solution set must not contain duplicate subsets. Return the solution in any order.</p>
+<pre><code class="kotlin">val ret10 = mutableListOf&lt;List&lt;Int&gt;&gt;()
+
+fun subsets(nums: IntArray): List&lt;List&lt;Int&gt;&gt; {
+    subsetsRecur(nums, 0, mutableListOf())
+    return ret10
+}
+
+fun subsetsRecur(nums: IntArray, start: Int, path: MutableList&lt;Int&gt;) {
+    ret10.add(ArrayList(path))
+    if (start == nums.size || path.size == nums.size) {
+        return
+    }
+
+    for (i in start..nums.size - 1) {
+        path.add(nums[i])
+        subsetsRecur(nums, i + 1, path)
+        path.removeAt(path.size - 1)
+    }
+}
+</code></pre>
+<h4 id="79-Word-Search"><a href="#79-Word-Search" class="headerlink" title="79. Word Search"></a>79. Word Search</h4><p>Given an m x n grid of characters board and a string word, return true if word exists in the grid.</p>
+<p>The word can be constructed from letters of sequentially adjacent cells, where adjacent cells are horizontally or vertically neighboring. The same letter cell may not be used more than once.</p>
+<pre><code class="kotlin">fun exist(board: Array&lt;CharArray&gt;, word: String): Boolean {
+    val visited = Array(board.size){BooleanArray(board[0].size)}
+    for (i in 0..board.size - 1) {
+        for (j in 0..board[0].size - 1) {
+            if (existRecur(i, j, board, word, 0, visited)) {
+                return true
+            }
+        }
+    }
+    return false
+}
+
+fun existRecur(i: Int, j:Int, board: Array&lt;CharArray&gt;, word: String, wordCur: Int, visited: Array&lt;BooleanArray&gt;): Boolean {
+    if (i &lt; 0 || i &gt; board.size - 1 || j &lt; 0 || j &gt; board[0].size - 1 || visited[i][j] ||board[i][j] != word[wordCur]) {
+        return false
+    }
+    visited[i][j] = true
+
+    if (wordCur == word.length - 1) {
+        return true
+    }
+    if (existRecur(i, j - 1, board, word, wordCur + 1, visited)) {
+        return true
+    }
+
+    if (existRecur(i, j + 1, board, word, wordCur + 1, visited)) {
+        return true
+    }
+
+    if (existRecur(i - 1, j, board, word, wordCur + 1, visited)) {
+        return true
+    }
+
+    if (existRecur(i + 1, j, board, word, wordCur + 1, visited)) {
+        return true
+    }
+    visited[i][j] = false
+    return false
+}
+</code></pre>
+<h4 id="80-Remove-Duplicates-from-Sorted-Array-II"><a href="#80-Remove-Duplicates-from-Sorted-Array-II" class="headerlink" title="80. Remove Duplicates from Sorted Array II"></a>80. Remove Duplicates from Sorted Array II</h4><p>Given a sorted array nums, remove the duplicates in-place such that duplicates appeared at most twice and return the new length.</p>
+<p>Do not allocate extra space for another array; you must do this by modifying the input array in-place with O(1) extra memory.</p>
+<p>Clarification:</p>
+<p>Confused why the returned value is an integer, but your answer is an array?</p>
+<p>Note that the input array is passed in by reference, which means a modification to the input array will be known to the caller.</p>
+<p>Internally you can think of this:</p>
+<p>// nums is passed in by reference. (i.e., without making a copy)<br>int len = removeDuplicates(nums);</p>
+<p>// any modification to nums in your function would be known by the caller.<br>// using the length returned by your function, it prints the first len elements.<br>for (int i = 0; i &lt; len; i++) {<br>    print(nums[i]);<br>}</p>
+<pre><code class="kotlin">fun removeDuplicates(nums: IntArray): Int {
+    if (nums.size &lt;= 2) {
+        return 2
+    }
+    nums.sort()
+    var slow = 2
+    for (fast in 2..nums.size - 1) {
+        if (nums[slow - 2] != nums[fast]) {
+            nums[slow] = nums[fast]
+            slow++
+        }
+    }
+    return slow
+}
+</code></pre>
+<p>Note: 移动慢指针条件； 和慢指针前两个元素对比</p>
+<h4 id="81-Search-in-Rotated-Sorted-Array-II"><a href="#81-Search-in-Rotated-Sorted-Array-II" class="headerlink" title="81. Search in Rotated Sorted Array II"></a>81. Search in Rotated Sorted Array II</h4><p> There is an integer array nums sorted in non-decreasing order (not necessarily with distinct values).</p>
+<p>Before being passed to your function, nums is rotated at an unknown pivot index k (0 &lt;= k &lt; nums.length) such that the resulting array is [nums[k], nums[k+1], …, nums[n-1], nums[0], nums[1], …, nums[k-1]] (0-indexed). For example, [0,1,2,4,4,4,5,6,6,7] might be rotated at pivot index 5 and become [4,5,6,6,7,0,1,2,4,4].</p>
+<p>Given the array nums after the rotation and an integer target, return true if target is in nums, or false if it is not in nums.</p>
+<pre><code class="kotlin">fun search(nums: IntArray, target: Int): Boolean {
+    var start = 0
+    var end = nums.size - 1
+    while (start &lt;= end) {
+        val mid = (start + end) / 2
+        if (nums[mid] == target) {
+            return true
+        } else {
+            if (nums[mid] == nums[start] &amp;&amp; nums[mid] == nums[end]) {
+                start++
+                end--
+            } else  if (nums[mid] &lt;= nums[end]) {//right sorted
+                if (target &gt; nums[mid] &amp;&amp; target &lt;= nums[end]) {
+                    start = mid + 1
+                } else {
+                    end = mid - 1
+                }
+            } else if (nums[mid] &gt;= nums[start]) {//left sorted
+                if (target &gt;= nums[start] &amp;&amp; target &lt; nums[mid]) {
+                    end = mid - 1
+                } else {
+                    start = mid + 1
+                }
+            }
+        }
+    }
+    return false
+}
+</code></pre>
+<h4 id="82-Remove-Duplicates-from-Sorted-List-II"><a href="#82-Remove-Duplicates-from-Sorted-List-II" class="headerlink" title="82. Remove Duplicates from Sorted List II"></a>82. Remove Duplicates from Sorted List II</h4><p>Given the head of a sorted linked list, delete all nodes that have duplicate numbers, leaving only distinct numbers from the original list. Return the linked list sorted as well.</p>
+<pre><code class="kotlin">fun deleteDuplicates(head: ListNode?): ListNode? {
+    val dummyNode = ListNode(0, head)
+    var pre = dummyNode
+    var cur = head
+    while (cur != null) {
+        if (cur.`val` == cur.next?.`val`) {
+            var tmp = cur
+            while (tmp != null &amp;&amp; tmp.`val` == tmp.next?.`val`) {
+                tmp = tmp.next
+            }
+            cur = tmp?.next
+            pre.next = cur
+        } else {
+            pre = cur
+            cur = cur.next
+        }
+    }
+    return dummyNode.next
+}
+</code></pre>
+<h4 id="83-Remove-Duplicates-from-Sorted-List"><a href="#83-Remove-Duplicates-from-Sorted-List" class="headerlink" title="83. Remove Duplicates from Sorted List"></a>83. Remove Duplicates from Sorted List</h4><p>Given the head of a sorted linked list, delete all duplicates such that each element appears only once. Return the linked list sorted as well.</p>
+<pre><code class="kotlin">fun deleteDuplicates(head: ListNode?): ListNode? {
+    var cur = head
+    while (cur?.next != null) {
+        if (cur.`val` == cur.next?.`val`) {
+            cur.next = cur.next?.next
+        } else {
+            cur = cur.next
+        }
+    }
+    return head
+}
+</code></pre>
+<p>!!!先跳过Hard….</p>
+<h4 id="86-Partition-List"><a href="#86-Partition-List" class="headerlink" title="86. Partition List"></a>86. Partition List</h4><p>Given the head of a linked list and a value x, partition it such that all nodes less than x come before nodes greater than or equal to x.</p>
+<p>You should preserve the original relative order of the nodes in each of the two partitions.</p>
+<pre><code class="kotlin">fun partition(head: ListNode?, x: Int): ListNode? {
+    val dummyHeadLeft = ListNode(0)
+    var curLeft = dummyHeadLeft
+    val dummyHeadRight = ListNode(0)
+    var curRight = dummyHeadRight
+    var cur = head
+    while (cur != null) {
+        if (cur.`val` &lt; x) {
+            curLeft.next = cur
+            curLeft = cur
+        } else{
+            curRight.next = cur
+            curRight = cur
+        }
+        cur = cur.next
+    }
+    //merge two list
+    curRight.next = null
+    curLeft.next = dummyHeadRight.next
+    return dummyHeadLeft.next
+}
+</code></pre>
+<p>Note: 注意出现循环链表</p>
+<h4 id="88-Merge-Sorted-Array"><a href="#88-Merge-Sorted-Array" class="headerlink" title="88. Merge Sorted Array"></a>88. Merge Sorted Array</h4><p>Given two sorted integer arrays nums1 and nums2, merge nums2 into nums1 as one sorted array.</p>
+<p>The number of elements initialized in nums1 and nums2 are m and n respectively. You may assume that nums1 has a size equal to m + n such that it has enough space to hold additional elements from nums2.</p>
+<pre><code class="kotlin">fun merge(nums1: IntArray, m: Int, nums2: IntArray, n: Int): Unit {
+    if (n &lt;=0) {
+        return
+    }
+    var cur = nums1.size - 1
+    var p1 = m - 1
+    var p2 = n - 1
+    while (p1 &gt;= 0 &amp;&amp; p2 &gt;= 0) {
+        if (nums1[p1] &gt; nums2[p2]) {
+            nums1[cur--] = nums1[p1--]
+        } else {
+            nums1[cur--] = nums2[p2--]
+        }
+    }
+
+    while (p2 &gt;= 0) {
+        nums1[cur--] = nums2[p2--]
+    }
+}
+</code></pre>
+<h4 id="89-Gray-Code"><a href="#89-Gray-Code" class="headerlink" title="89. Gray Code"></a>89. Gray Code</h4><p>The gray code is a binary numeral system where two successive values differ in only one bit.</p>
+<p>Given an integer n representing the total number of bits in the code, return any sequence of gray code.</p>
+<p>A gray code sequence must begin with 0.</p>
+<pre><code class="kotlin">val grayCodeRet = mutableListOf&lt;Int&gt;()
+
+fun grayCode(n: Int): List&lt;Int&gt; {
+    val path = StringBuilder()
+    grayCodeRecur(0, n, true, path)
+    path.deleteCharAt(path.length - 1)
+    grayCodeRecur(1, n, false, path)
+    //println(grayCodeRet)
+    return grayCodeRet
+}
+
+fun grayCodeRecur(cur: Int, n: Int, left: Boolean, path: StringBuilder) {
+    path.append(cur)
+    if (path.length &gt;= n) {
+        grayCodeRet.add(Integer.parseInt(path.toString(), 2))
+        return
+    }
+    if (left) {
+        grayCodeRecur(0, n, true, path)
+        path.deleteCharAt(path.length - 1)
+        grayCodeRecur(1, n, false, path)
+        path.deleteCharAt(path.length - 1)
+    } else {
+        grayCodeRecur(1, n, true, path)
+        path.deleteCharAt(path.length - 1)
+        grayCodeRecur(0, n, false, path)
+        path.deleteCharAt(path.length - 1)
+    }
+}
+</code></pre>
+<h4 id="90-Subsets-II"><a href="#90-Subsets-II" class="headerlink" title="90. Subsets II"></a>90. Subsets II</h4><p>Given an integer array nums that may contain duplicates, return all possible subsets (the power set).</p>
+<p>The solution set must not contain duplicate subsets. Return the solution in any order.</p>
+<pre><code class="kotlin">val ret11 = mutableListOf&lt;List&lt;Int&gt;&gt;()
+
+fun subsetsWithDup(nums: IntArray): List&lt;List&lt;Int&gt;&gt; {
+    nums.sort()
+    subsetsWithDupRecur(nums, 0, mutableListOf())
+    return ret11
+}
+
+fun subsetsWithDupRecur(nums: IntArray, start: Int, path: MutableList&lt;Int&gt;) {
+    ret11.add(ArrayList(path))
+    if (start &gt;= nums.size) {
+        return
+    }
+    for (i in start..nums.size - 1) {
+        if (i &gt; start &amp;&amp; nums[i] == nums[i - 1]) {
+            continue
+        }
+        path.add(nums[i])
+        subsetsWithDupRecur(nums, i + 1, path)
+        path.removeAt(path.size - 1)
+    }
+}
+</code></pre>
+<h4 id="91-Decode-Ways"><a href="#91-Decode-Ways" class="headerlink" title="91. Decode Ways"></a>91. Decode Ways</h4><p>A message containing letters from A-Z can be encoded into numbers using the following mapping:</p>
+<p>‘A’ -&gt; “1”<br>‘B’ -&gt; “2”<br>…<br>‘Z’ -&gt; “26”</p>
+<p>To decode an encoded message, all the digits must be grouped then mapped back into letters using the reverse of the mapping above (there may be multiple ways). For example, “11106” can be mapped into:</p>
+<pre><code>&quot;AAJF&quot; with the grouping (1 1 10 6)
+&quot;KJF&quot; with the grouping (11 10 6)
+</code></pre><p>Note that the grouping (1 11 06) is invalid because “06” cannot be mapped into ‘F’ since “6” is different from “06”.</p>
+<p>Given a string s containing only digits, return the number of ways to decode it.</p>
+<p>The answer is guaranteed to fit in a 32-bit integer.</p>
+<pre><code class="kotlin">fun numDecodings(s: String): Int {
+    val dp = IntArray(s.length + 1)
+    dp[0] = 1
+    for (i in 0..s.length - 1) {
+        if (s[i] != &#39;0&#39;) {
+            dp[i + 1] = dp[i]
+        }
+
+        if (i &gt; 0 &amp;&amp; s[i - 1] != &#39;0&#39; &amp;&amp; ((s[i - 1] - &#39;0&#39;) * 10 + (s[i] - &#39;0&#39;)) &lt;= 26) {
+            dp[i + 1] += dp[i - 1]
+        }
+    }
+    return dp[s.length]
+}
+</code></pre>
+<h4 id="92-Reverse-Linked-List-II"><a href="#92-Reverse-Linked-List-II" class="headerlink" title="92. Reverse Linked List II"></a>92. Reverse Linked List II</h4><p>Given the head of a singly linked list and two integers left and right where left &lt;= right, reverse the nodes of the list from position left to position right, and return the reversed list.</p>
+<pre><code class="kotlin">fun reverseBetween(head: ListNode?, left: Int, right: Int): ListNode? {
+    val dummyHead = ListNode(0)
+    dummyHead.next = head
+    var cur = head
+    var i = 1
+    var before: ListNode? = null
+    while (i &lt; left) {
+        before = cur
+        cur = cur?.next
+        i++
+    }
+    val rangeTail = cur
+    var after = cur
+    var pre: ListNode? = null
+    while (cur != null &amp;&amp; i &lt;= right) {
+        val next = cur.next
+        cur.next = pre
+        pre = cur
+        cur = next
+        i++
+        after = next
+    }
+    val rangeHead = pre
+    before?.next = rangeHead
+    rangeTail?.next = after
+    if (before == null) {
+        return rangeHead
+    } else {
+        return dummyHead.next
+    }
+}
+</code></pre>
+<h4 id="93-Restore-IP-Addresses"><a href="#93-Restore-IP-Addresses" class="headerlink" title="93. Restore IP Addresses"></a>93. Restore IP Addresses</h4><p>Given a string s containing only digits, return all possible valid IP addresses that can be obtained from s. You can return them in any order.</p>
+<p>A valid IP address consists of exactly four integers, each integer is between 0 and 255, separated by single dots and cannot have leading zeros. For example, “0.1.2.201” and “192.168.1.1” are valid IP addresses and “0.011.255.245”, “192.168.1.312” and “192.168@1.1” are invalid IP addresses. </p>
+<pre><code class="kotlin">val ret = mutableListOf&lt;String&gt;()
+
+fun restoreIpAddresses(s: String): List&lt;String&gt; {
+    restoreIpAddressesRecur(s, 0, mutableListOf())
+    return ret
+}
+
+fun restoreIpAddressesRecur(s: String, start: Int, path: MutableList&lt;String&gt;) {
+    if (path.size == 4 &amp;&amp; start == s.length) {
+        val builder = StringBuilder()
+        for (it in path) {
+            builder.append(it).append(&#39;.&#39;)
+        }
+        builder.deleteCharAt(builder.length - 1)
+        ret.add(builder.toString())
+        return
+    }
+
+    for (i in start .. s.length - 1) {
+        if (path.size == 3 &amp;&amp; (s.length - 1 - start) &gt; 3) {
+            break
+        }
+        if (i - start &gt; 0 &amp;&amp; s[start] == &#39;0&#39;) {
+            break
+        }
+        val item = s.subSequence(start .. i).toString()
+        if (Integer.parseInt(item) &gt; 255) {
+            break
+        }
+        path.add(item)
+        restoreIpAddressesRecur(s, i + 1, path)
+        path.removeAt(path.size - 1)
+    }
+}
+</code></pre>
+<h4 id="94-Binary-Tree-Inorder-Traversal"><a href="#94-Binary-Tree-Inorder-Traversal" class="headerlink" title="94. Binary Tree Inorder Traversal"></a>94. Binary Tree Inorder Traversal</h4><p>Given the root of a binary tree, return the inorder traversal of its nodes’ values.</p>
+<pre><code class="kotlin">//递归
+fun inorderTraversal(root: TreeNode?): List&lt;Int&gt; {
+    val ret = mutableListOf&lt;Int&gt;()
+    inorderTraversalRecur(root, ret)
+    return ret
+}
+
+fun inorderTraversalRecur(node: TreeNode?, path: MutableList&lt;Int&gt;) {
+    if (node == null) {
+        return
+    }
+    inorderTraversalRecur(node.left, path)
+    path.add(node.`val`)
+    inorderTraversalRecur(node.right, path)
+}
+
+//迭代
+fun inorderTraversal(root: TreeNode?): List&lt;Int&gt; {
+    val ret = mutableListOf&lt;Int&gt;()
+    val stack: Deque&lt;TreeNode&gt; = LinkedList&lt;TreeNode&gt;()
+    var cur = root
+    while (cur != null || stack.isNotEmpty()) {
+        while (cur != null) {
+            stack.push(cur)
+            cur = cur.left
+        }
+        cur = stack.pop()
+        ret.add(cur.`val`)
+        cur = cur.right
+    }
+    return ret
+}
+</code></pre>
+<h4 id="95-Unique-Binary-Search-Trees-II"><a href="#95-Unique-Binary-Search-Trees-II" class="headerlink" title="95. Unique Binary Search Trees II"></a>95. Unique Binary Search Trees II</h4><p>Given an integer n, return all the structurally unique BST’s (binary search trees), which has exactly n nodes of unique values from 1 to n. Return the answer in any order.</p>
+<pre><code class="kotlin">fun generateTrees(n: Int): List&lt;TreeNode?&gt; {
+    return generateTreesInternal(IntArray(n) {
+        it + 1
+    }, 0, n - 1)
+}
+
+fun generateTreesInternal(arr: IntArray, start: Int, end: Int): List&lt;TreeNode?&gt; {
+    val ret = mutableListOf&lt;TreeNode?&gt;()
+    if (start &gt; end) {
+        ret.add(null)
+        return ret
+    }
+    for (i in start..end) {
+
+        val leftTrees = generateTreesInternal(arr, start, i - 1)
+        val rightTrees = generateTreesInternal(arr, i + 1, end)
+
+        for (left in leftTrees) {
+            for (right in rightTrees) {
+                val root = TreeNode(arr[i])
+                root.left = left
+                root.right = right
+                ret.add(root)
+            }
+        }
+    }
+    return ret
+}
+</code></pre>
+<h4 id="96-Unique-Binary-Search-Trees"><a href="#96-Unique-Binary-Search-Trees" class="headerlink" title="96. Unique Binary Search Trees"></a>96. Unique Binary Search Trees</h4><p>Given an integer n, return the number of structurally unique BST’s (binary search trees) which has exactly n nodes of unique values from 1 to n.</p>
+<pre><code class="kotin">//Divide Conquer
+fun numTrees(n: Int): Int {
+    return numTreesRecur(1, n)
+}
+
+fun numTreesRecur(start: Int, end: Int) : Int{
+    var ret = 0
+    if (start &gt; end) {
+        return 1
+    }
+    for (i in start..end) {
+        val leftNum = numTreesRecur(start, i - 1)
+        val rightNum = numTreesRecur(i + 1, end)
+        ret += leftNum * rightNum
+    }
+    return ret
+}
+
+//Dynamic Programing
+fun numTrees(n: Int): Int {
+    val G = IntArray(n + 1)
+    G[0] = 1
+    G[1] = 1
+    for (i in 2 .. n) {
+        for (k in 1..i) {
+            G[i] += G[k - 1] * G [i - k]
+        }
+    }
+    return G[n]
+}
+</code></pre>
+<p>Note: DP的状态转移方程可以从分治推导出来</p>
+<h4 id="97-Interleaving-String"><a href="#97-Interleaving-String" class="headerlink" title="97. Interleaving String"></a>97. Interleaving String</h4><p>Given strings s1, s2, and s3, find whether s3 is formed by an interleaving of s1 and s2.</p>
+<p>An interleaving of two strings s and t is a configuration where they are divided into non-empty substrings such that:</p>
+<ul>
+<li>s = s1 + s2 + … + sn</li>
+<li>t = t1 + t2 + … + tm</li>
+<li>|n - m| &lt;= 1</li>
+<li>The interleaving is s1 + t1 + s2 + t2 + s3 + t3 + … or t1 + s1 + t2 + s2 + t3 + s3 + …</li>
+</ul>
+<p>Note: a + b is the concatenation of strings a and b.</p>
+<pre><code class="kotlin">//递归超时.....:
+fun isInterleave(s1: String, s2: String, s3: String): Boolean {
+    return isInterleave(s1, s1.length - 1, s2, s2.length - 1, s3, s3.length - 1)
+}
+
+fun isInterleave(s1: String, i1: Int, s2: String, i2: Int, s3: String, i3: Int): Boolean {
+    if (i1 &lt; 0 &amp;&amp; i2 &lt; 0 &amp;&amp; i3 &lt; 0) {
+        return true
+    }
+        if (i1 &gt;=0 &amp;&amp; i3 &gt;= 0 &amp;&amp; s1[i1] == s3[i3] &amp;&amp; isInterleave(s1, i1 - 1, s2, i2, s3, i3 - 1)) {
+        return true
+    } else if (i2 &gt;= 0 &amp;&amp; i3 &gt;= 0 &amp;&amp; s2[i2] == s3[i3] &amp;&amp; isInterleave(s1, i1, s2, i2 - 1, s3, i3 - 1)) {
+        return true
+    } else {
+        return false
+    }
+}
+
+//DP:
+fun isInterleave(s1: String, s2: String, s3: String): Boolean {
+    if (s1.length + s2.length != s3.length) {
+        return false
+    }
+    val dp = Array(s1.length + 1) {BooleanArray(s2.length + 1)}
+    dp[0][0] = true
+    for (i in 0 .. s1.length) {
+        for (j in 0 .. s2.length) {
+            if (i &gt; 0 &amp;&amp; s3[i + j - 1] == s1[i - 1] &amp;&amp; dp[i - 1][j]) {
+                dp[i][j] = true
+            }
+
+            if (j &gt; 0 &amp;&amp; s3[i + j - 1] == s2[j - 1] &amp;&amp; dp[i][j - 1]) {
+                dp[i][j] = true
+            }
+        }
+    }
+    return dp[s1.length][s2.length]
+}
+</code></pre>
+<h4 id="98-Validate-Binary-Search-Tree"><a href="#98-Validate-Binary-Search-Tree" class="headerlink" title="98. Validate Binary Search Tree"></a>98. Validate Binary Search Tree</h4><p>Given the root of a binary tree, determine if it is a valid binary search tree (BST).</p>
+<p>A valid BST is defined as follows:</p>
+<ul>
+<li>The left subtree of a node contains only nodes with keys less than the node’s key.</li>
+<li>The right subtree of a node contains only nodes with keys greater than the node’s key.</li>
+<li>Both the left and right subtrees must also be binary search trees.</li>
+</ul>
+<pre><code class="kotlin">//递归：
+var pre: Int? = null
+
+fun isValidBST(root: TreeNode?): Boolean {
+    if (root == null) {
+        return true
+    }
+    if (!isValidBST(root.left)) {
+        return false
+    }
+    println(root.`val`)
+    if (pre != null &amp;&amp; root.`val` &lt;= pre!!) {
+        return false
+    } else {
+        pre = root.`val`
+        return isValidBST(root.right)
+    }
+}
+
+//迭代
+fun isValidBST(root: TreeNode?): Boolean {
+    var pre: Int? = null
+    val stack = LinkedList&lt;TreeNode&gt;()
+    var cur = root
+    while (cur != null || stack.isNotEmpty()) {
+        while (cur != null) {
+            stack.push(cur)
+            cur = cur.left
+        }
+        val top = stack.pop()
+        if (pre != null &amp;&amp; top.`val` &lt;= pre) {
+            return false
+        } else {
+            pre = top.`val`
+        }
+        cur = top.right
+    }
+    return true
+}
+</code></pre>
+<h4 id="100-Same-Tree"><a href="#100-Same-Tree" class="headerlink" title="100. Same Tree"></a>100. Same Tree</h4><p>Given the roots of two binary trees p and q, write a function to check if they are the same or not.</p>
+<p>Two binary trees are considered the same if they are structurally identical, and the nodes have the same value.</p>
+<pre><code class="kotlin">fun isSameTree(p: TreeNode?, q: TreeNode?): Boolean {
+    if (p?.`val` != q?.`val`) {
+        return false
+    }
+    if (p == null &amp;&amp; q == null) {
+        return true
+    }
+    return isSameTree(p?.left, q?.left) &amp;&amp; isSameTree(p?.right, q?.right)
+}
+</code></pre>
 
 
 
