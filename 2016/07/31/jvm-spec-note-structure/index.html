@@ -1,0 +1,136 @@
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    
+<script src="/js/less.min.js"></script>
+
+    
+    
+<link rel="stylesheet" href="/css/main.css">
+
+    
+<link rel="stylesheet" href="/prettify/tomorrow.css">
+
+    
+<script src="/js/jquery-2.1.4.min.js"></script>
+
+    
+<script src="/js/raphael-min.js"></script>
+
+    
+<script src="/js/underscore-min.js"></script>
+
+    
+<script src="/js/sequence-diagram-min.js"></script>
+
+    
+<script src="/js/flowchart-latest.js"></script>
+
+    
+<script src="/prettify/prettify.js"></script>
+
+    
+<script src="/js/common.js"></script>
+
+    
+<script src="/js/gitment.browser.js"></script>
+
+    
+<link rel="stylesheet" href="/css/default.css">
+
+    
+<link rel="stylesheet" href="/lib/fancybox/dist/jquery.fancybox.css">
+
+
+    
+<script src="/lib/fancybox/dist/jquery.fancybox.js"></script>
+
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    
+    
+    <script>
+        (function (i, s, o, g, r, a, m) {
+            i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+                (i[r].q = i[r].q || []).push(arguments)
+            }, i[r].l = 1 * new Date(); a = s.createElement(o),
+                m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
+        })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+        ga('create', 'UA-71897482-1', 'auto');
+        ga('send', 'pageview');
+    </script>
+    
+    
+    <title>《JVM规范》(Java SE 7)笔记-----虚拟机结构</title>
+    <meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=0.8, user-scalable=no">
+<meta name="generator" content="Hexo 6.3.0"></head>
+<body>
+
+<h3 id="《Java虚拟机规范》-Java-SE-7-笔记—–虚拟机结构"><a href="#《Java虚拟机规范》-Java-SE-7-笔记—–虚拟机结构" class="headerlink" title="《Java虚拟机规范》(Java SE 7)笔记—–虚拟机结构"></a>《Java虚拟机规范》(Java SE 7)笔记—–虚拟机结构</h3><h4 id="引言"><a href="#引言" class="headerlink" title="引言"></a>引言</h4><p>Java虚拟机可以看做是一台抽象的计算机，如同真实的计算机那样，有自己的指令集以及各种运行时内存区域。Java虚拟机与Java语言没有必然联系，它只与特定的二进制文件即Class文件关联，Class文件包含了Java虚拟机指令(字节码)，符号表以及一些需要的辅助信息。任何一种语言只要可以被编译成有效的Class文件，都可以在Java虚拟机上面运行。</p>
+<h4 id="1-数据类型"><a href="#1-数据类型" class="headerlink" title="1.数据类型"></a>1.数据类型</h4><p>Java虚拟机可以操作的数据类型分为两类,原始类型(Primitive Types)与引用类型(Reference Types)。原始类型不需要额外的手段来确定运行期他们实际的数据类型，指令本身就可以确定;引用类型编译器应当在编译期间尽最大努力完成类型检查。</p>
+<h4 id="2-原始类型与值"><a href="#2-原始类型与值" class="headerlink" title="2.原始类型与值"></a>2.原始类型与值</h4><p>原始类型包括数值类型(Numberic Types)、布尔类型(Boolean Type)和returnAddress类型。</p>
+<p>数值类型:整数类型byte short int long char，浮点类型float double，与<a target="_blank" rel="noopener" href="https://zh.wikipedia.org/zh-cn/IEEE_754">IEEE 754格式</a>取值和操作一致。</p>
+<p>布尔类型:Java虚拟机定义了boolean这种数据类型，但是没有指令支持，涉及到boolean值类型的运算，都会被编译成int类型来代替。</p>
+<p>returnAddress类型:被指令jsr,jsr_w,ret使用，从JDK7开始虚拟机不允许出现这几条指令，所以不用过于关注。returnAddress类型的值指向一条虚拟机指令的操作码，初衷是用来实现Java语言中的finally语句块。jsr与ret是一起使用的,jsr跳转到指定的offet位置，并将jsr下一条指令压入栈顶，就是retureAddress类型了，使用ret返回到指定的指令位置。<a target="_blank" rel="noopener" href="https://www.zhihu.com/question/29056872">参考:)</a></p>
+<h4 id="3-引用类型与值"><a href="#3-引用类型与值" class="headerlink" title="3.引用类型与值"></a>3.引用类型与值</h4><p>类类型(Class Types) 数组类型(Array Types) 接口类型(Interface Types)，分别对应类实例，数组实例，实现某个接口的实例。</p>
+<p>引用类型值有一个特殊的值null，当一个引用不指向任何对象时，它的值用null表示，可以转换为任意类型，Java虚拟机没有规定null的实现应用用怎样的编码。</p>
+<h4 id="4-运行时数据区"><a href="#4-运行时数据区" class="headerlink" title="4.运行时数据区"></a>4.运行时数据区</h4><p><img src="/assets/jvm_runtime_data.png" alt="运行时数据区"></p>
+<p><strong>PC(Program Counter)寄存器</strong>：Java虚拟机中每一条线程都有自己的PC寄存器，用来保存当前方法的指令地址(也就是returenAddress类型的值)，如果方法是native的，则保存本地指针的值。 </p>
+<p><strong>Java虚拟机栈(Java Virtual Machine Stack)</strong>:Java虚拟机每一条线程都有私有的栈，用来存储局部变量与一些过程结果的地方，由栈幀(Frames)组成。Java虚拟机栈能够被实现成固定大小或者动态扩展模型。异常情形:(1)如果线程请求分配的栈容量超过Java虚拟机栈允许的最大容量，则抛出StackOverflowError异常 (2)如果Java虚拟机栈能够动态扩展，申请不到内存去创建新的栈，则抛出OutofMemoryError异常。</p>
+<p><strong>Java堆(Heap) </strong>:堆区是线程共享的区域，用分配类实例，数组对象的内存区域。Java虚拟机启动的时候就会被创建，并且分配的内存由GC(Garbage Collector)管理，这些对象无需也无法显示地被销毁。当创建的堆超过了GC能够提供的容量，则会抛OutofMemoryError异常。</p>
+<p><strong>方法区(Method Aera)</strong>：Java虚拟机启动时创建，线程共享的内存区域，编译代码(类信息，类方法，成员变量，运行时常量等信息)的存储区域。虽然方法区是堆区的逻辑组成部分，虚拟机实现可以选择是否回收该区域垃圾。方法区内存空间不满足内存分配要求，同样抛出OutOfMemoryError。</p>
+<p><strong>运行时常量池(Rumtime Constant Pool)</strong>: 类似符号表，从编译时可以知道的字面量到必须运行是解析后才能知道的方法或者字段引用，位于方法区中，在类和接口被创建，对应的运行时常量池就被创建。</p>
+<p><strong>本地方法栈(Native Method Stack)</strong>:     用来支持native方法的执行，在线程创建时分配。和虚拟机栈类似，能够动态扩展，栈容量超过本地方法栈允许最大容量抛StackOverflowError,无法申请到足够的内存去扩展抛OutOfMemoryError。</p>
+<h4 id="4-栈幀-Frame"><a href="#4-栈幀-Frame" class="headerlink" title="4.栈幀(Frame)"></a>4.栈幀(Frame)</h4><p>用来存储数据或部分过程结果的数据结构，处理动态链接(Dynamic Linking)、方法返回值、异常分派(Dispatch Exception)。随着方法调用创建，方法结束销毁。每一个栈幀都有自己的局部变量表(Local Variables)，操作数栈(Operand Stack)和指向当前方法所属的类的运行时常量池的引用，并且容量是在编译期确定的。</p>
+<p>栈幀是线程本地私有数据，不可能在一个栈幀之中访问另一条线程的栈幀。</p>
+<p><strong>局部变量表:</strong>局部变量表可以保存前面所述的虚拟机的数据类型，其中两个局部变量保存一个类型为long或double的数据。局部变量表使用索引来访问，可以想象为一个数组的模型，当方法调用时，它的参数从零开始连续的存放在局部变量表示，如果是实例方法，则第0个局部变量一定是调用方法对象的引用(即Java里的this)。</p>
+<p><strong>操作数栈：</strong>后进先出(Last-In-First-Out,LIFO)栈，用来存放Java虚拟的指令执行时操作数以及执行后的结果，操作数栈与局部变量表可以相互转移。在方法调用的时候，操作数栈用来准备调用方法的参数以及接收方法返回结果。</p>
+<p>每一个栈幀内部都包含一个指向运行时常量池的引用来支持当前方法的代码实现动态链接，方法调用或者访问成员变量时是通过符号引用表示，动态链接的作用就是将符号引用转化为实际的方法引用。</p>
+<h4 id="5-浮点算法"><a href="#5-浮点算法" class="headerlink" title="5.浮点算法"></a>5.浮点算法</h4><p>Java虚拟机中<em>浮点操作</em>在遇到非法操作（如被零整除，上限溢出等）不会抛exception。</p>
+<h4 id="6-初始化方法"><a href="#6-初始化方法" class="headerlink" title="6.初始化方法"></a>6.初始化方法</h4><p>Java虚拟机层面上类实例的构造方法名为<init>，在实例的初始化通过invokespecial指令调用。类和接口的初始化通过<clinit>，在类加载时由Java虚拟机自身隐式调用，没有任何指令可以调用这个方法。</p>
+<h4 id="7-异常"><a href="#7-异常" class="headerlink" title="7.异常"></a>7.异常</h4><p>异常的本质是程序控制权的一种及时、非局部的转换(从异常抛出的地方转至处理异常的地方)。当前前程抛出的异常称为同步异常，非当前线程抛出的异常为异步异常。虚拟机异常的情形有:</p>
+<ul>
+<li>指令非正常执行，如数组越界，栈溢出等</li>
+<li>athrow指令被执行</li>
+<li>虚拟机内部错误或者Thread/ThreadGroup的stop方法被执行(异步异常)</li>
+</ul>
+<p>Java虚拟机执行每一个方法都会配有零至多个异常处理器(Exception Handlers)，每个方法的异常处理器都存储在一个表中，在运行时出现异常后，会按照异常处理器的描述执行。</p>
+<h4 id="8-字节码指令集简介"><a href="#8-字节码指令集简介" class="headerlink" title="8.字节码指令集简介"></a>8.字节码指令集简介</h4><p>Java虚拟机的指令有一个字节长度的操作码(Opcode)和操作数(Operands)组成，由于操作码为一个字节，所以虚拟机的字节码指令最后有256条。</p>
+<p>Java虚拟机解释器伪代码:</p>
+<pre><code>do &#123;
+    自动计算PC寄存器以及从PC寄存器的位置取出操作码
+    if(存在操作数)取出操作数
+    执行操作码所定义的操作
+&#125;while(处理下一次循环);
+</code></pre><p>由于Java虚拟机字节码数量限制，对于特定类型操作只提供了有限的类型相关指令去操作它。多数对于boolean byte short char类的数据操作，实际上都是使用相应对int类型作为运算类型。</p>
+<p><strong>加载存储指令</strong>:用于局部变量表与操作数栈之间来回传输，例如:<br>istore_1 指令作用是从操作数栈中弹出一个int型的值，并保存在第一个局部变量中<br>iload_1 指令作用是将第一个局部变量的值压入操作数栈</p>
+<p><strong>运算指令</strong>:用于两个操作数栈上的值进行运算，并把结果重新存入操作数栈栈顶。例如iadd isub，Java虚拟机没有明确规定整型数据溢出情况，但规定除法指令(idiv/ldiv)，求余指令(irem和lrem)的除数为零时抛ArithmeitcException异常。</p>
+<p><strong>类型转换指令</strong>:Java虚拟机直接支持宽化类型转换(Widening Numberic Conversions)，如int类型到long float double类型,long 到float double类型。 窄化类型转换(Narrowing Numberic Conversions)会导致符号位丢失，精度丢失，指令有i2b i2c f2i f2l等等。</p>
+<p><strong>对象创建与操作</strong>:类实例与数组都是对象，使用不同的指令操作。<br>    创建对象new,创建数组newarray anewarray multinewarray。<br>    访问字段getfield putfield getstatic putstatic<br>    加载数组元素到操作数栈:iaload aaload等<br>    将操作数栈的值存储到数组元素:iastore aastore等<br>    取数组长度的指令arraylength<br>    检查类实例类型的指令instanceof checkcast</p>
+<p><strong>操作数栈管理</strong>:pop pop2 dup dup2 swap等</p>
+<p><strong>控制转移指令</strong>:<br>    条件分支:ifeq iflt…<br>    复合条件分支:tableswitch lookupswitch<br>    无条件：goto goto_w jsr ret..</p>
+<p><strong>方法调用和返回指令</strong>:四条指令用于方法调用,<br>    invokevirtial 调用实例方法<br>    invokeinterface 调用接口方法<br>    invokespecial 调用特殊的实例方法，例如实例初始化方法，私有方法以及父类方法<br>    invodestatic 调用静态方法<br>    方法返回指令 ireturn(同样，boolean byte char short int类型时时候) areturn return(返回类型类void)</p>
+<p><strong>抛出异常</strong>:显式抛出的指令athrow，Java虚拟机检测到指令执行异常由Java虚拟机自动抛出。</p>
+<p><strong>同步</strong>：方法级同步时隐式的，常量池的方法列表里面指令。指令序列同步的关键字 monitorennter monitorexit，对应Java中sychronized的代码块。</p>
+<h4 id="8-类库"><a href="#8-类库" class="headerlink" title="8.类库"></a>8.类库</h4><p>Java虚拟机必须对不同平台下的Java类库提供充分的实现，某些与操作系统密切相关的类库需要Java虚拟机的本地方法来实现:</p>
+<ul>
+<li>反射 java.lang.relect包与java.lang.Class类</li>
+<li>类和接口的加载与创建 java.lang.ClassLoader类</li>
+<li>安全相关 java.lang.SecurityManager</li>
+<li>多线程</li>
+<li>弱引用</li>
+</ul>
+<h4 id="9-公有设计，私有实现"><a href="#9-公有设计，私有实现" class="headerlink" title="9.公有设计，私有实现"></a>9.公有设计，私有实现</h4><p>虚拟机实现必须能够读取Class文件，并且精确实现虚拟机代码的含义，怎么实现是实现者自己的事情，只要外部接口看起来与规范描述的一样。目前虚拟机实现方式主要有两种:</p>
+<ul>
+<li>将输入的Java虚拟代码在加载的时或执行时翻译成另外一种虚拟机指令集。(如Davilk)</li>
+<li>将输入的Java虚拟机代码在加载时或执行时翻译成宿主机CPU的本地指令集(如ART)</li>
+</ul>
+
+
+
+
+</body>
+</html>

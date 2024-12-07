@@ -1,0 +1,256 @@
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    
+<script src="/js/less.min.js"></script>
+
+    
+    
+<link rel="stylesheet" href="/css/main.css">
+
+    
+<link rel="stylesheet" href="/prettify/tomorrow.css">
+
+    
+<script src="/js/jquery-2.1.4.min.js"></script>
+
+    
+<script src="/js/raphael-min.js"></script>
+
+    
+<script src="/js/underscore-min.js"></script>
+
+    
+<script src="/js/sequence-diagram-min.js"></script>
+
+    
+<script src="/js/flowchart-latest.js"></script>
+
+    
+<script src="/prettify/prettify.js"></script>
+
+    
+<script src="/js/common.js"></script>
+
+    
+<script src="/js/gitment.browser.js"></script>
+
+    
+<link rel="stylesheet" href="/css/default.css">
+
+    
+<link rel="stylesheet" href="/lib/fancybox/dist/jquery.fancybox.css">
+
+
+    
+<script src="/lib/fancybox/dist/jquery.fancybox.js"></script>
+
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    
+    
+    <script>
+        (function (i, s, o, g, r, a, m) {
+            i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+                (i[r].q = i[r].q || []).push(arguments)
+            }, i[r].l = 1 * new Date(); a = s.createElement(o),
+                m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
+        })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+        ga('create', 'UA-71897482-1', 'auto');
+        ga('send', 'pageview');
+    </script>
+    
+    
+    <title>读书笔记:Android的线程与线程池</title>
+    <meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=0.8, user-scalable=no">
+<meta name="generator" content="Hexo 6.3.0"></head>
+<body>
+
+<h3 id="Android开发艺术探索-Android的线程与线程池"><a href="#Android开发艺术探索-Android的线程与线程池" class="headerlink" title="Android开发艺术探索:Android的线程与线程池"></a><a target="_blank" rel="noopener" href="http://www.amazon.cn/Android%E5%BC%80%E5%8F%91%E8%89%BA%E6%9C%AF%E6%8E%A2%E7%B4%A2-%E4%BB%BB%E7%8E%89%E5%88%9A/dp/B014HV1X3K/ref=sr_1_1?ie=UTF8&amp;qid=1451616304&amp;sr=8-1&amp;keywords=Android%E5%BC%80%E5%8F%91%E8%89%BA%E6%9C%AF%E6%8E%A2%E7%B4%A2">Android开发艺术探索</a>:Android的线程与线程池</h3><p>AsyncTask封装了线程池和Handler，方便用来子线程里面更新UI，HandlerThread具有消息循环的线程，可以直接在内部使用Handler，IntentService封装方便地执行后台任务，内部使用HanlderThread来执行任务。<br>IntentService做为一种服务，不容易被系统杀死，如果一个线程里面附加到四大组件，优先级很低，容易被系统回收，关于进程优先级可以参考官方文档<a target="_blank" rel="noopener" href="http://developer.android.com/intl/zh-cn/guide/components/processes-and-threads.html">Processes and Threads</a></p>
+<blockquote>
+<p>前台进程 &gt; 可见进程 &gt; 服务进程 &gt; 后台进程 &gt; 空进程</p>
+</blockquote>
+<h4 id="Android的线程形态"><a href="#Android的线程形态" class="headerlink" title="Android的线程形态"></a>Android的线程形态</h4><ul>
+<li>AsyncTask</li>
+</ul>
+<p>AsyncTask实例(官方文档里面的):</p>
+<pre><code> private class DownloadFilesTask extends AsyncTask&lt;URL, Integer, Long&gt; &#123;
+
+    protected void onPreExecute() &#123;
+        //init
+    &#125;
+
+     protected Long doInBackground(URL... urls) &#123;
+         int count = urls.length;
+         long totalSize = 0;
+         for (int i = 0; i &lt; count; i++) &#123;
+             totalSize += Downloader.downloadFile(urls[i]);
+             publishProgress((int) ((i / (float) count) * 100));
+             // Escape early if cancel() is called
+             if (isCancelled()) break;
+         &#125;
+         return totalSize;
+     &#125;
+
+     protected void onProgressUpdate(Integer... progress) &#123;
+         setProgressPercent(progress[0]);
+     &#125;
+
+     protected void onPostExecute(Long result) &#123;
+         showDialog(&quot;Downloaded &quot; + result + &quot; bytes&quot;);
+     &#125;
+ &#125;
+
+//use
+  new DownloadFilesTask().execute(url1, url2, url3);
+</code></pre><p>AsyncTask&lt;Params, Progress, Result&gt;三个泛型参数:Params为执行doInBackground里面接收的参数，Progress为doInBackground里执行publicProgress,在onProgressUpdate接收的参数，Result为onPostExecute执行结果接收的参数。</p>
+<p>四个重要的方法:onPreExecute doInBackground onProgressUpdate onPostExecute,除了doInBackground是在Worker Thread里面执行的，其余的都在UI线程里面执行。</p>
+<p>使用条件限制:</p>
+<ul>
+<li>创建实例和执行execute需要在UI线程里面，如果不这样做onPreExecute执行将不会在UI线程里面执行。</li>
+<li>不要手动调onPreExecute doInBackground onProgressUpdate onPostExecute这四个方法</li>
+<li>一个AsyncTask对象一次只能执行一次</li>
+<li><p>Android 1.6之前，AsyncTask是串行执行任务的，Android 1.6开始使用线程池来处理，Android 3.0之后，为了避免并发错误，又采用了串行执行任务，之后如果想要使用线程池的话可以使用executeOnExecotor，并且可以使用AsyncTask为我们准备好的线程池，AsyncTask.THREAD_POOL_EXECUTOR。 </p>
+</li>
+<li><p>HandlerThread<br>HandlerThread也是一种Thread，只是里面带有Looper，可以用来创建Handler并将Looper附加在上面，这样就就可以向子线程里面发消息，执行相应的任务。</p>
+<pre><code>public class HanlderThread extend Thread &#123;
+  @Override
+  public void run() &#123;
+      mTid = Process.myTid();
+      Looper.prepare();
+      synchronized (this) &#123;
+          mLooper = Looper.myLooper();
+          notifyAll();
+      &#125;
+      Process.setThreadPriority(mPriority);
+      onLooperPrepared();
+      Looper.loop();
+      mTid = -1;
+  &#125;
+&#125;
+</code></pre><p>简单使用:</p>
+<pre><code>HandlerThread thread = new HandlerThread(&quot;my&quot;);
+thread.start();
+Looper looper = thread.getLooper();
+Handler mServiceHandler = new Handler(looper)&#123;
+  @Override
+  public void handleMessage(Message msg) &#123;
+      //dosomething
+  &#125;
+&#125;;
+mServiceHandler.sendMessage(Message.obtain());
+thread.quit();
+</code></pre></li>
+<li><p>IntentService<br>Intent是一种抽象的Service，我们需要实现这个抽象的方法，这个就是我们需要在Worker Thread里面执行任务重写的方法:</p>
+</li>
+</ul>
+<pre><code>protected abstract void onHandleIntent(Intent intent);
+</code></pre><p>IntentService可用于执行耗时的任务，当任务执行结束之后会自动停止，由于是一种Service，优先级比单独的线程高，不容易被系统回收。IntentService封装了HandlerThread与Handler，从实现的onCreate可看的出来</p>
+<pre><code>    @Override
+    public void onCreate() &#123;
+        super.onCreate();
+        HandlerThread thread = new HandlerThread(&quot;IntentService[&quot; + mName + &quot;]&quot;);
+        thread.start();
+
+        mServiceLooper = thread.getLooper();
+        mServiceHandler = new ServiceHandler(mServiceLooper);
+    &#125;
+</code></pre><p>启动服务的时候，会执行onStartCommand，然后使用mServiceHandler向HandlerThread发消息，mRedelivery表示Service被意外杀死后的行为，true表示START_REDELIVER_INTENT重启Service并重新发送Intent，false为START_NOT_STICKY不做任何操作，可以通过setIntentRedelivery来控制。</p>
+<pre><code>@Override
+public int onStartCommand(Intent intent, int flags, int startId) &#123;
+    onStart(intent, startId);
+    return mRedelivery ? START_REDELIVER_INTENT : START_NOT_STICKY;
+&#125;
+
+@Override
+public void onStart(Intent intent, int startId) &#123;
+    Message msg = mServiceHandler.obtainMessage();
+    msg.arg1 = startId;
+    msg.obj = intent;
+    mServiceHandler.sendMessage(msg);
+&#125;
+</code></pre><p>ServiceHandler的实现，收到消息后调用onHandleIntent处理我们发来的请求，结束之后调用stopSelf(int startId)来尝试停止服务，注意调用stopSelf()会立刻停止服务，stopSelf(int startId)会在停止服务之前判断启动服务的次数是否和startId相等，如果相等就停止服务，这个策略是有ActivityManagerService来控制的。</p>
+<pre><code>private final class ServiceHandler extends Handler &#123;
+    public ServiceHandler(Looper looper) &#123;
+        super(looper);
+    &#125;
+
+    @Override
+    public void handleMessage(Message msg) &#123;
+        onHandleIntent((Intent)msg.obj);
+        stopSelf(msg.arg1);
+    &#125;
+&#125;
+</code></pre><p>由于使用的是Handler机制来处理，所以执行任务是串行的。</p>
+<h4 id="Android中的线程池"><a href="#Android中的线程池" class="headerlink" title="Android中的线程池"></a>Android中的线程池</h4><p>使用线程池能够对线程做管理，并且减小线程创建和销毁的开销，控制线程的并发数，避免大量线程抢占系统资源。</p>
+<p>线程池主要使用ThreadPoolExecutor来实现，通过配置构造方法的参数来达到想要的效果:</p>
+<pre><code>public ThreadPoolExecutor(int corePoolSize,
+                              int maximumPoolSize,
+                              long keepAliveTime,
+                              TimeUnit unit,
+                              BlockingQueue&lt;Runnable&gt; workQueue,
+                              ThreadFactory threadFactory,
+                              RejectedExecutionHandler handler)
+</code></pre><p>corePoolSize:线程池核心线程数，核心线程默认情况下会一直存活，即使线程池处于闲置状态</p>
+<p>maximumPoolSize:允许线程池的最大数量，达到这个值之后，后续的任务将会被阻塞</p>
+<p>keepAliveTime:非核心线程闲置的超时时长，超过就会被回收</p>
+<p>TimeUnit:keepAliveTime的单位</p>
+<p>workQueue:线程池里面的任务队列</p>
+<p>threadFactory:线程池工厂，为线程池提供创建线程的策略</p>
+<p>handler:当线程池慢了的拒绝策略,默认的策略是抛RejectedExecutionException</p>
+<p>ThreadPoolExecutor线程池执行任务规则:</p>
+<ul>
+<li>如果线程池的线程未达到corePoolSize，就会新启动一个线程来执行任务</li>
+<li>如果线程池的数量已经达到或超过corePoolSize，那么任务会被插入workQueue中排队</li>
+<li>如果workQueue已满，如果线程池数量未达到maximumPoolSize，就会启动核心线程来执行任务，如果已经达到的会就会启用RejectedExecutionHandler来执行拒绝策略</li>
+</ul>
+<h4 id="线程池的分类"><a href="#线程池的分类" class="headerlink" title="线程池的分类"></a>线程池的分类</h4><p>创建线程池可以使用JDK给我们提供的Executors来创建，下面四种比较常见的线程池:</p>
+<ul>
+<li>FixedThreadPool</li>
+</ul>
+<pre><code> public static ExecutorService newFixedThreadPool(int nThreads) &#123;
+        return new ThreadPoolExecutor(nThreads, nThreads,
+                                      0L, TimeUnit.MILLISECONDS,
+                                      new LinkedBlockingQueue&lt;Runnable&gt;());
+ &#125;
+</code></pre><p>线程数量固定的线程池，处于空闲空闲状态也不会被回收，任务队列没有大小限制。</p>
+<ul>
+<li>CachedThreadPool</li>
+</ul>
+<pre><code>public static ExecutorService newCachedThreadPool() &#123;
+    return new ThreadPoolExecutor(0, Integer.MAX_VALUE,
+                                  60L, TimeUnit.SECONDS,
+                                  new SynchronousQueue&lt;Runnable&gt;());
+&#125;
+</code></pre><p>线程数量不定的线程池，只有非核心线程，线程数量不能大于Integer.MAX_VALUE，提交新任务就会启动新线程，空闲线程只能存活60s，任务队列相当于一个空集合，提交任何任务都会被立即执行。</p>
+<ul>
+<li>ShceduledThreadPool</li>
+</ul>
+<pre><code>  public static ScheduledExecutorService newScheduledThreadPool(int corePoolSize) &#123;
+        return new ScheduledThreadPoolExecutor(corePoolSize);
+    &#125;
+
+  public ScheduledThreadPoolExecutor(int corePoolSize) &#123;
+        super(corePoolSize, Integer.MAX_VALUE, 0, NANOSECONDS,
+              new DelayedWorkQueue());
+    &#125;
+</code></pre><p>核心线程固定，非核心线程没有限制的线程池，并且当非核心线程闲置时会被立即回收，主要用来执行定时任务和具有固定周期的重复任务。</p>
+<ul>
+<li>SingleThreadExecutor</li>
+</ul>
+<pre><code>public static ExecutorService newSingleThreadExecutor() &#123;
+    return new FinalizableDelegatedExecutorService
+        (new ThreadPoolExecutor(1, 1,
+                                0L, TimeUnit.MILLISECONDS,
+                                new LinkedBlockingQueue&lt;Runnable&gt;()));
+&#125;
+</code></pre><p>内部只有一个核心线程，确保所有任务都按照顺序在同一个线程中执行，所以任务之间不需要处理线程同步的问题。</p>
+
+
+
+
+</body>
+</html>

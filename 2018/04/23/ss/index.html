@@ -1,0 +1,140 @@
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    
+<script src="/js/less.min.js"></script>
+
+    
+    
+<link rel="stylesheet" href="/css/main.css">
+
+    
+<link rel="stylesheet" href="/prettify/tomorrow.css">
+
+    
+<script src="/js/jquery-2.1.4.min.js"></script>
+
+    
+<script src="/js/raphael-min.js"></script>
+
+    
+<script src="/js/underscore-min.js"></script>
+
+    
+<script src="/js/sequence-diagram-min.js"></script>
+
+    
+<script src="/js/flowchart-latest.js"></script>
+
+    
+<script src="/prettify/prettify.js"></script>
+
+    
+<script src="/js/common.js"></script>
+
+    
+<script src="/js/gitment.browser.js"></script>
+
+    
+<link rel="stylesheet" href="/css/default.css">
+
+    
+<link rel="stylesheet" href="/lib/fancybox/dist/jquery.fancybox.css">
+
+
+    
+<script src="/lib/fancybox/dist/jquery.fancybox.js"></script>
+
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    
+    
+    <script>
+        (function (i, s, o, g, r, a, m) {
+            i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+                (i[r].q = i[r].q || []).push(arguments)
+            }, i[r].l = 1 * new Date(); a = s.createElement(o),
+                m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
+        })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+        ga('create', 'UA-71897482-1', 'auto');
+        ga('send', 'pageview');
+    </script>
+    
+    
+    <title>Ubuntu 14.04 x64 搭建SS服务</title>
+    <meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=0.8, user-scalable=no">
+<meta name="generator" content="Hexo 6.3.0"></head>
+<body>
+
+<h3 id="Ubuntu-14-04-x64-搭建SS服务"><a href="#Ubuntu-14-04-x64-搭建SS服务" class="headerlink" title="Ubuntu 14.04 x64 搭建SS服务"></a>Ubuntu 14.04 x64 搭建SS服务</h3><p>最近找到一个比较好的<a target="_blank" rel="noopener" href="https://qaz.cloud">梯子</a>，速度也很快，可以看YOUTU，而且可以按月付，不用担心跑路，最便宜的套餐只要¥10!</p>
+<p>每次科学上网的ip出现了问题，就需要去销毁原来的服务器，重新申请ip，然后又重新搜一遍ss搭建的流程，下次不搜了，自己记录一下，后续有时间打算弄个脚本。（已有现成的脚本<a target="_blank" rel="noopener" href="https://github.com/teddysun/shadowsocks_install）">https://github.com/teddysun/shadowsocks_install）</a></p>
+<h4 id="shadowsocks-服务器安装"><a href="#shadowsocks-服务器安装" class="headerlink" title="shadowsocks 服务器安装"></a>shadowsocks 服务器安装</h4><p>更新软件源</p>
+<pre><code>sudo apt-get update
+</code></pre><p>然后安装 PIP 环境</p>
+<pre><code>sudo apt-get install python-pip
+</code></pre><p>直接安装 shadowsocks</p>
+<pre><code>sudo pip install shadowsocks
+</code></pre><h4 id="运行-shadowsocks-服务器"><a href="#运行-shadowsocks-服务器" class="headerlink" title="运行 shadowsocks 服务器"></a>运行 shadowsocks 服务器</h4><p>配置文件进行配置，方法创建/etc/shadowsocks.json文件，填入如下内容：</p>
+<pre><code>&#123;
+    &quot;server&quot;:&quot;&quot;,
+    &quot;server_port&quot;:10086,
+    &quot;local_address&quot;: &quot;127.0.0.1&quot;,
+    &quot;local_port&quot;:1080,
+    &quot;password&quot;:&quot;&quot;,
+    &quot;timeout&quot;:30000,
+    &quot;method&quot;:&quot;aes-256-cfb&quot;
+&#125;
+</code></pre><p>各字段的含义：</p>
+<table>
+<thead>
+<tr>
+<th>name</th>
+<th style="text-align:center">info</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>server</td>
+<td style="text-align:center">服务器 IP (IPv4/IPv6)，注意这也将是服务端监听的 IP 地址</td>
+</tr>
+<tr>
+<td>server_port</td>
+<td style="text-align:center">服务器端口</td>
+</tr>
+<tr>
+<td>local_port</td>
+<td style="text-align:center">本地端端口</td>
+</tr>
+<tr>
+<td>password</td>
+<td style="text-align:center">用来加密的密码</td>
+</tr>
+<tr>
+<td>timeout</td>
+<td style="text-align:center">超时时间（秒）</td>
+</tr>
+<tr>
+<td>method</td>
+<td style="text-align:center">加密方法，可选择 “bf-cfb”, “aes-256-cfb”, “des-cfb”, “rc4″, 等等。默认是一种不安全的加密，推荐用 “aes-256-cfb”</td>
+</tr>
+</tbody>
+</table>
+<p>创建完毕后，赋予文件权限：</p>
+<pre><code>sudo chmod 755 /etc/shadowsocks.json
+</code></pre><p>为了支持这些加密方式，你要需要安装</p>
+<pre><code>sudo apt–get install python–m2crypto
+</code></pre><p>然后使用配置文件在后台运行：</p>
+<pre><code>sudo ssserver -c /etc/shadowsocks.json -d start
+</code></pre><h4 id="配置开机自启动"><a href="#配置开机自启动" class="headerlink" title="配置开机自启动"></a>配置开机自启动</h4><p>bash shell 启动时会执行/etc/rc.local这个脚本，所以在该脚本里面加入启动命令，就可以实现自启动。</p>
+<pre><code>sudo vi /etc/rc.local
+</code></pre><p>在 exit 0 这一行的上边加入如下</p>
+<pre><code>/usr/local/bin/ssserver –c /etc/shadowsocks.json
+</code></pre>
+
+
+
+</body>
+</html>

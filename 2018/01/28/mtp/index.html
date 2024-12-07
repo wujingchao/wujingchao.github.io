@@ -1,0 +1,172 @@
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    
+<script src="/js/less.min.js"></script>
+
+    
+    
+<link rel="stylesheet" href="/css/main.css">
+
+    
+<link rel="stylesheet" href="/prettify/tomorrow.css">
+
+    
+<script src="/js/jquery-2.1.4.min.js"></script>
+
+    
+<script src="/js/raphael-min.js"></script>
+
+    
+<script src="/js/underscore-min.js"></script>
+
+    
+<script src="/js/sequence-diagram-min.js"></script>
+
+    
+<script src="/js/flowchart-latest.js"></script>
+
+    
+<script src="/prettify/prettify.js"></script>
+
+    
+<script src="/js/common.js"></script>
+
+    
+<script src="/js/gitment.browser.js"></script>
+
+    
+<link rel="stylesheet" href="/css/default.css">
+
+    
+<link rel="stylesheet" href="/lib/fancybox/dist/jquery.fancybox.css">
+
+
+    
+<script src="/lib/fancybox/dist/jquery.fancybox.js"></script>
+
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    
+    
+    <script>
+        (function (i, s, o, g, r, a, m) {
+            i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+                (i[r].q = i[r].q || []).push(arguments)
+            }, i[r].l = 1 * new Date(); a = s.createElement(o),
+                m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
+        })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+        ga('create', 'UA-71897482-1', 'auto');
+        ga('send', 'pageview');
+    </script>
+    
+    
+    <title>MTP协议总结与Android源码分析</title>
+    <meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=0.8, user-scalable=no">
+<meta name="generator" content="Hexo 6.3.0"></head>
+<body>
+
+<h3 id="MTP协议与Android源码分析"><a href="#MTP协议与Android源码分析" class="headerlink" title="MTP协议与Android源码分析"></a>MTP协议与Android源码分析</h3><p>前段时间有做MTP协议扩展的相关的内容，在这里总结一下。</p>
+<p>（注意协议方面有很多细节一篇简短的文章是不可能面面俱到，这里只是学习总结，本人接触协议的时间也不是很长，难免有纰漏，有错误之处请不吝指教）。</p>
+<h4 id="协议部分"><a href="#协议部分" class="headerlink" title="协议部分"></a>协议部分</h4><h5 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h5><p>Media Transfer Protocol即媒体传输协议，主要是用来管理移动设备上的图片、视频、音频等媒体信息，典型的有Android设备，相机设备。</p>
+<p>MTP协议是应用层协议，底层协议可以走USB或TCP/IP协议，只要能够无差错传输即可。</p>
+<p><img src="/assets/tcp_underlying_.png" alt="tcp_underlying"></p>
+<p>MTP协议框架上面定义了很多多媒体相关的命令，例如获取设备信息，获取对象信息，本文着重介绍MTP协议框架，然后举例特定的命令帮助理解。</p>
+<h5 id="协议模型"><a href="#协议模型" class="headerlink" title="协议模型"></a>协议模型</h5><p>MTP协议有两个角色，类似于客户端与服务端，在MTP协议里面有特定的称号，发起请求的叫Initiator,对请求进行响应的叫Responder。Initiator通常对应于PC/MAC宿主机，Responder对应于被管理的设备，例如Android手机。任何操作都需要Inititaor发起，然后Reponder进行响应。</p>
+<p>Initiator对Reponder的大多数请求都是需要打开一个Session会话，类似于HTTP里面的Session，用于保存上下文相关的环境信息，例如，在MTP传输媒体文件过程中，Inititor传输媒体文件到Reponder是需要发送两次请求才能完成的，第一次请求发送SendObjectInfo的消息，告诉Reponder即将要发送的媒体信息，包括大小，格式，媒体文件名称等；第二次请求发送SendObject传输实际的文件，在这两次请求中第二次请求需要使用第一次请求保存的相关信息，所以就需要保持在一个Session会话里面。MTP按理论上说是可以支持多Session会话的。</p>
+<p>还有另一个关键的概念，就是Transaction，对应于Initiator发起请求，然后数据传输，Responder响应一次完整的过程，有点类似于数据库里面的事务，比如Initiator发起一次请求，在Reponder没有响应之前，是不能进行另一次请求。所以在USB单Session实现中，Initiator是不能同时发送多次请求的。</p>
+<h5 id="传输模型"><a href="#传输模型" class="headerlink" title="传输模型"></a>传输模型</h5><p>前面介绍到Transaction对应于Initiator发起请求，然后数据传输，Responder响应。所以对于的请求，数据，响应传输分为三个阶段：</p>
+<ul>
+<li>Request Phase</li>
+<li>Data Phase</li>
+<li>Reponse Phase</li>
+</ul>
+<p>其中Data Phase是<strong>可选</strong>的，并且是<strong>单向</strong>的。<br>单向的定义就规定了Data Phase的数据流要么是Initiator到Reponder(以下简称I-&gt;R),要么是Reponder到Initiator(以下简称R-&gt;I)。<br>MTP协议也规定Data Phase是可选的，就是意味着Initiator发送完成请求后，Reponder就直接响应，不需要传输数据，因为有的MTP消息不需要传输数据，Request与Repond本身就可以传递少量的参数。</p>
+<p>下图就是传输的三种情况：</p>
+<p><img src="/assets/mtp_transfer_nodata.png?imageView2/2/w/656/h/500/q/100" alt="mtp_transfer_i-r"></p>
+<p><img src="/assets/mtp_transfer_i-r.png?imageView2/2/w/656/h/500/q/100" alt="mtp_transfer_i-r"></p>
+<p><img src="/assets/mtp_transfer_r-i.png?imageView2/2/w/656/h/500/q/100" alt="mtp_transfer_i-r"></p>
+<p>数据流的字段是有Request的字段OperationCode决定的，根据不同的功能决定Data阶段的数据流向。比如Initiator读取媒体信息GetObjectInfo的数据流向就是R-&gt;I；Initiator发送媒体文件信息SenObjectInfo的数据流向就是I-&gt;R; 读取设备上媒体文件的个数GetObjectNum由于Reponse中携带的参数已经能够满足表示数量，所以就不需要Data Phase。</p>
+<p>下面来说一下Request与Reponse的Dataset，用来表示能够携带哪些参数。Request与Response的Dataset是一样的。需要特别注意的是，不同的底层协议对于Dataset的存放方式是不同的，MTP SEPC只给出的是USB的实现方式。</p>
+<p><img src="/assets/mtp_req_resp_dataset.png" alt="mtp_req_resp_dataset"></p>
+<p>最关键的是操作码OperationCode定义Request请求要进行什么样的操作，MTP Responder 该处理什么样的任务，然后根据功能决定Data的数据流向。<br>对于USB来说是单Session的实现方式，在其实现的数据集是不包含sessionID这个字段的，但是在发送大多数Request之前，也还是需要发送OpenSession这个Request请求。</p>
+<p>TransactionID由Initiator指定，在一次完整的Request到Response都要指定相同的值，不需要每一次都相同。</p>
+<p>Request与Response可以携带0到5个参数，根据OperationCode的功能来决定。</p>
+<p>还有一种比较特殊的消息就是Reponder可以直接发送Event给Initiator，用来通知Initiator，Reponder出现了一些状况或者发生了一些变化，可以与Transaction关联，也可以不可Transaction关联，根据Event的事件来定。比如设备上新增了一条媒体文件的信息，就需要通过Event事件来通知Initiator来更新。</p>
+<p><img src="/assets/mtp_transfer_event.png?imageView2/2/w/656/h/400/q/100" alt="mtp_transfer_event"></p>
+<p>Event是不能传递二进制数据的，只能携带0到3个参数，其Dataset为:</p>
+<p><img src="/assets/mtp_transfer_event_dataset.png?imageView2/2/w/656/h/400/q/100" alt="mtp_transfer_event_dataset"></p>
+<p>常用功能的Request与Reponse的OperationCode，Event的EventCode，在MTP Spec规格文档里面有定义，不同的Code对应什么样含义以及携带什么样的参数，还给出了要厂商可以扩展的Code范围。</p>
+<p>之前看Android源码的时候就有点懵，spec上面的定义的Dataset与源码里面的对不上，后来看到sepc文档最后的这个表格才知道不同的实现方式数据的存放是不一样的，下面这个就是USB定义的MTP数据包，Request，Data，Response都要携带定义的头部信息，Initator与Responder都要读取USB数据包来解析MTP数据包。</p>
+<p><img src="/assets/mtp_transfer_usb_container_dataset.png?imageView2/2/w/656/h/400/q/100" alt="mtp_transfer_usb_container_dataset"></p>
+<p>Request与Response的Payload就是携带的那0到5个参数，Data的Payload就是二进制数据，可能是媒体文件，也有可能是自定义的数据格式。</p>
+<h5 id="对象模型"><a href="#对象模型" class="headerlink" title="对象模型"></a>对象模型</h5><p><img src="/assets/mtp_transfer_objectinfo.png?imageView2/2/w/656/h/420/q/100" alt="mtp_transfer_objectinfo.png"></p>
+<p>StorageID：对应一个设备上的存储<strong>分区</strong>，表现形式就是无符号32位的整数uint32, 高16位表示存储设备，低16位表示对应存储设备的分区。例如Android设备，有内部存储与外置SD卡，SD卡可能有多个分区，就对应不同的StorageID。</p>
+<p>ObjectHandle:实际就是一个int32的对象id，对应设备上的一个个媒体文件对象，可能是文件夹或者是媒体文件，MTP读取文件或者发送文件都需要这个id，其通常包含一个父Object，类似于文件系统的目录树，根路径的值比较特殊，0xFFFFFFFF</p>
+<p>ObjectFormat：媒体类型</p>
+<p>….其余的不难理解，需要时查询文档</p>
+<h4 id="源码部分"><a href="#源码部分" class="headerlink" title="源码部分"></a>源码部分</h4><p>Android源码的处理过程：</p>
+<p>处理MTP请求的应用就是提供媒体数据库的MediaProvider，对应的包名为com.android.providers.media，对于源码树的位置packages/providers/MediaProvider。<br>其本身是一个系统应用，在AndroidManifest里面监听USB状态变化的广播：</p>
+<pre><code>&lt;receiver android:name=&quot;.MtpReceiver&quot;&gt;
+   &lt;intent-filter&gt;
+        &lt;action android:name=&quot;android.intent.action.BOOT_COMPLETED&quot; /&gt;
+   &lt;/intent-filter&gt;
+   &lt;intent-filter&gt;
+        &lt;action android:name=&quot;android.hardware.usb.action.USB_STATE&quot; /&gt;
+   &lt;/intent-filter&gt;
+&lt;/receiver&gt;
+</code></pre><p>当连上USB数据线，就会将MtpService.java启动，然后加载动态库，开启一个线程,jni调用MTPServer.cpp的run方法，不断地从mtp驱动读消息，处理，响应。而MTP的Object对应的就是文件数据里面的一个个文件。</p>
+<p><img src="/assets/mtp_transfer_mtpserver_main_flow.png?imageView2/2/w/656/h/420/q/100" alt="mtp_transfer_mtpserver_main_flow"></p>
+<p>MtpServer.cpp的run方法:</p>
+<pre><code>void MtpServer::run() &#123;
+    int fd = mFD;//打开的mtp驱动文件描述符
+
+    while (1) &#123;
+        int ret = mRequest.read(fd);//读取Request请求，放到mRequest封装的类里面
+        //...
+        MtpOperationCode operation = mRequest.getOperationCode();
+        MtpTransactionID transaction = mRequest.getTransactionID();
+
+
+
+        // FIXME need to generalize this
+        bool dataIn = (operation == MTP_OPERATION_SEND_OBJECT_INFO
+                    || operation == MTP_OPERATION_SET_OBJECT_REFERENCES
+                    || operation == MTP_OPERATION_SET_OBJECT_PROP_VALUE
+                    || operation == MTP_OPERATION_SET_DEVICE_PROP_VALUE);//根据OperationCode来处理Data Phase的数据流向
+        if (dataIn) &#123;
+            int ret = mData.read(fd);
+            //...
+        &#125; else &#123;
+            mData.reset();
+        &#125;
+
+        if (handleRequest()) &#123;//handleRequest根据不同的OperationCode功能处理不同的任务
+            if (!dataIn &amp;&amp; mData.hasData()) &#123;
+                mData.setOperationCode(operation);
+                mData.setTransactionID(transaction);
+                ALOGV(&quot;sending data:&quot;);
+                ret = mData.write(fd);
+            &#125;
+
+            mResponse.setTransactionID(transaction);
+
+            ret = mResponse.write(fd);//响应
+            const int savedErrno = errno;
+        &#125; else &#123;
+            ALOGV(&quot;skipping response\n&quot;);
+        &#125;
+    &#125;
+    //....
+
+&#125;
+</code></pre><p>对照MTP SEPC文档的附录接口看代码比较简单，就是读取解析结构化数据或者封装需要发送的结构化数据，但是有一点需要特别注意，<br>处理发送文件与读取文件的操作不是在用户空间完成的，而是通过IOCTL，调用驱动接口在内核空间完成，这样会比较高效，不用再用户空间拷贝一份处理给内核空间，而是有内核空间直接发送。</p>
+
+
+
+
+</body>
+</html>

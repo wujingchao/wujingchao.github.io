@@ -1,0 +1,446 @@
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    
+<script src="/js/less.min.js"></script>
+
+    
+    
+<link rel="stylesheet" href="/css/main.css">
+
+    
+<link rel="stylesheet" href="/prettify/tomorrow.css">
+
+    
+<script src="/js/jquery-2.1.4.min.js"></script>
+
+    
+<script src="/js/raphael-min.js"></script>
+
+    
+<script src="/js/underscore-min.js"></script>
+
+    
+<script src="/js/sequence-diagram-min.js"></script>
+
+    
+<script src="/js/flowchart-latest.js"></script>
+
+    
+<script src="/prettify/prettify.js"></script>
+
+    
+<script src="/js/common.js"></script>
+
+    
+<script src="/js/gitment.browser.js"></script>
+
+    
+<link rel="stylesheet" href="/css/default.css">
+
+    
+<link rel="stylesheet" href="/lib/fancybox/dist/jquery.fancybox.css">
+
+
+    
+<script src="/lib/fancybox/dist/jquery.fancybox.js"></script>
+
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    
+    
+    <script>
+        (function (i, s, o, g, r, a, m) {
+            i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+                (i[r].q = i[r].q || []).push(arguments)
+            }, i[r].l = 1 * new Date(); a = s.createElement(o),
+                m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
+        })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+        ga('create', 'UA-71897482-1', 'auto');
+        ga('send', 'pageview');
+    </script>
+    
+    
+    <title>Android锁屏下启动应用卡屏5秒的原因分析</title>
+    <meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=0.8, user-scalable=no">
+<meta name="generator" content="Hexo 6.3.0"></head>
+<body>
+
+<h3 id="Android锁屏下启动应用卡屏5秒的原因分析"><a href="#Android锁屏下启动应用卡屏5秒的原因分析" class="headerlink" title="Android锁屏下启动应用卡屏5秒的原因分析"></a>Android锁屏下启动应用卡屏5秒的原因分析</h3><p>最近分析一个问题，在锁屏窗口中启动应用会出现卡顿5秒，比如拨打电话，启动Google日历等。</p>
+<p>拿拨打电话来举例，启动的action为 android.intent.action.CALL，对应处理的Activity在Telecom中：</p>
+<pre><code>//packages/services/Telecomm/AndroidManifest.xml:
+
+&lt;activity android:name=&quot;.components.UserCallActivity&quot;
+        android:label=&quot;@string/userCallActivityLabel&quot;
+        android:theme=&quot;@style/Theme.Telecomm.Transparent&quot;
+        android:permission=&quot;android.permission.CALL_PHONE&quot;
+        android:excludeFromRecents=&quot;true&quot;
+        android:process=&quot;:ui&quot;&gt;
+    &lt;!-- CALL action intent filters for the various ways of initiating an outgoing call. --&gt;
+    &lt;intent-filter&gt;
+        &lt;action android:name=&quot;android.intent.action.CALL&quot; /&gt;
+        &lt;category android:name=&quot;android.intent.category.DEFAULT&quot; /&gt;
+        &lt;data android:scheme=&quot;tel&quot; /&gt;
+    &lt;/intent-filter&gt;
+&lt;/activity&gt;
+</code></pre><p>出现卡屏的UserCallActivity比较特别，没有界面，启动之后就会在onCreate里面直接finish，其他的没有出现这个问题快捷方式都是在启动的Activity直接显示。</p>
+<h4 id="WMS出现卡屏5秒的原因分析"><a href="#WMS出现卡屏5秒的原因分析" class="headerlink" title="WMS出现卡屏5秒的原因分析"></a>WMS出现卡屏5秒的原因分析</h4><p>启动Activity  com.android.server.telecom/.components.UserCallActivity的时候调用AMS的方法：</p>
+<pre><code>com/android/server/am/ActivityStackSupervisor.java：
+
+final boolean realStartActivityLocked(ActivityRecord r, ProcessRecord app,
+                                    boolean andResume, boolean checkConfig) throws RemoteException &#123;
+//…
+    if (mKeyguardController.isKeyguardLocked()) &#123;//锁屏状态下调用
+        r.notifyUnknownVisibilityLaunched();
+    &#125;
+//…
+&#125;
+</code></pre><p>接着调用ActivityRecord# notifyUnknownVisibilityLaunched方法：</p>
+<pre><code>com/android/server/am/ActivityRecord.java：
+
+void notifyUnknownVisibilityLaunched() &#123;
+
+   // No display activities never add a window, so there is no point in waiting them for
+   // relayout.
+      if (!noDisplay) &#123;
+            mWindowContainerController.notifyUnknownVisibilityLaunched();
+      &#125;
+&#125;
+</code></pre><p>最终调用到UnknownAppVisibilityController#notifyLaunched方法，UnknownAppVisibilityController里面的成员变量mUnknownApps记录了锁屏状态下调用AppWindowToken的状态列表，它有几个状态：</p>
+<p>UNKNOWN_STATE_WAITING_RESUME    等待执行完onResume<br>UNKNOWN_STATE_WAITING_RELAYOUT   等待执行完layout<br>UNKNOWN_STATE_WAITING_VISIBILITY_UPDATE   等待可见性的更新</p>
+<p>目前看来这个类的目的就是控制锁屏界面下启动的Activity显示，要等待锁屏下开启的Activity完全显示以后才能显示其他的Activity，如果一直不显示也会其他被启动的Acitivity也有一个5s的超时被强制显示。</p>
+<pre><code>com/android/server/wm/UnknownAppVisibilityController.java
+
+/**
+ * Manages the set of &#123;@link AppWindowToken&#125;s for which we don&#39;t know yet whether it&#39;s visible or
+ * not. This happens when starting an activity while the lockscreen is showing. In that case, the
+ * keyguard flags an app might set influence it&#39;s visibility, so we wait until this is resolved to
+ * start the transition to avoid flickers.（防止闪烁先显示Launcer，然后又快速地切换到显示目标Activity）
+ */
+class UnknownAppVisibilityController &#123;
+    /**
+     * Notifies that &#123;@param appWindow&#125; has been launched behind Keyguard, and we need to wait * until it is resumed and relaid out to resolve the visibility.
+     * Keyguard状态下启动Activity的时候调用
+     */
+
+void notifyLaunched(@NonNull AppWindowToken appWindow) &#123;
+if (DEBUG_UNKNOWN_APP_VISIBILITY) &#123;
+            Slog.d(TAG, &quot;App launched appWindow=&quot; + appWindow);
+        &#125;
+        mUnknownApps.put(appWindow, UNKNOWN_STATE_WAITING_RESUME); 
+&#125;
+
+
+/**
+ * Notifies that &#123;@param appWindow&#125; has finished resuming.  Acitivty#onResume完成调用
+ */
+void notifyAppResumedFinished(@NonNull AppWindowToken appWindow) &#123;
+    if (mUnknownApps.containsKey(appWindow)
+            &amp;&amp; mUnknownApps.get(appWindow) == UNKNOWN_STATE_WAITING_RESUME) &#123;
+        if (DEBUG_UNKNOWN_APP_VISIBILITY) &#123;
+            Slog.d(TAG, &quot;App resume finished appWindow=&quot; + appWindow);
+        &#125;
+        mUnknownApps.put(appWindow, UNKNOWN_STATE_WAITING_RELAYOUT);
+    &#125;
+&#125;
+
+    /**
+     * Notifies that &#123;@param appWindow&#125; has relaid out.
+     * layout完成
+     */
+void notifyRelayouted(@NonNull AppWindowToken appWindow) &#123;
+     if (!mUnknownApps.containsKey(appWindow)) &#123;
+         return;
+     &#125;
+     if (DEBUG_UNKNOWN_APP_VISIBILITY) &#123;
+         Slog.d(TAG, &quot;App relayouted appWindow=&quot; + appWindow);
+     &#125; 
+     int state = mUnknownApps.get(appWindow);
+        if (state == UNKNOWN_STATE_WAITING_RELAYOUT) &#123; //当layout完成并且可见，也会从集合里移除
+            mUnknownApps.put(appWindow, UNKNOWN_STATE_WAITING_VISIBILITY_UPDATE);
+            mService.notifyKeyguardFlagsChanged(this::notifyVisibilitiesUpdated);
+    &#125;
+&#125; 
+    //在Activity#onDestroy方法执行完成通知AMS的时候才会调用，mUnknownApps移除对应的appWindow
+    void appRemovedOrHidden(@NonNull AppWindowToken appWindow) &#123;
+        if (DEBUG_UNKNOWN_APP_VISIBILITY) &#123;
+            Slog.d(TAG, &quot;App removed or hidden appWindow=&quot; + appWindow);
+        &#125;
+        mUnknownApps.remove(appWindow);
+    &#125;
+    //这个方法在AppTrasition的时候后判断是否有mUnknownApps存在
+    boolean allResolved() &#123;
+        return mUnknownApps.isEmpty();
+    &#125;
+｝
+</code></pre><p>下面是UnknownAppVisibility的日志，可以看到UserCallActivity的AppWindowToken被放到了mUnknownApps里面，过了5s之后才执行UserCallActivity#onDestory方法，从mUnknownApps里面移除。</p>
+<pre><code>LOG:
+06-02 09:54:44.352 D/UnknownAppVisibility(  777): App launched appWindow=AppWindowToken&#123;99d9676 token=Token&#123;85511 ActivityRecord&#123;5db03d9 u0 com.android.server.telecom/.components.UserCallActivity t288&#125;&#125;&#125;
+
+06-02 09:54:45.263 D/UnknownAppVisibility(  777): App resume finished appWindow=AppWindowToken&#123;99d9676 token=Token&#123;85511 ActivityRecord&#123;5db03d9 u0 com.android.server.telecom/.components.UserCallActivity t288&#125;&#125;&#125;
+
+06-02 09:54:51.455 V/ActivityManagerService_Switch(  777): ACTIVITY DESTROYED: Token&#123;85511 ActivityRecord&#123;5db03d9 u0 com.android.server.telecom/.components.UserCallActivity t288 f&#125;&#125; [这个地方的onDestroy不是正常finish后调用的，而是AMS的超时机制触发]
+
+06-02 09:54:51.460 D/UnknownAppVisibility(  777): App removed or hidden appWindow=AppWindowToken&#123;99d9676 token=Token&#123;85511 ActivityRecord&#123;5db03d9 u0 com.android.server.telecom/.components.UserCallActivity t288&#125;&#125;&#125;
+</code></pre><p>在启动Activity的时候，会调用continueSurfaceLayout：</p>
+<pre><code>com/android/server/am/ActivityStarter.java:
+
+private int startActivity(final ActivityRecord r, ActivityRecord sourceRecord,
+IVoiceInteractionSession voiceSession, IVoiceInteractor voiceInteractor,
+                        int startFlags, boolean doResume, ActivityOptions options, TaskRecord inTask, ActivityRecord[] outActivity) &#123;
+//…
+try &#123;
+    mService.mWindowManager.deferSurfaceLayout();
+    result = startActivityUnchecked(r, sourceRecord, voiceSession, voiceInteractor,
+            startFlags, doResume, options, inTask, outActivity);
+&#125; finally &#123;
+    mService.mWindowManager.continueSurfaceLayout();
+&#125;
+    return result;
+&#125;
+</code></pre><p>最终会调用到WindowSurfacePlacer # transitionGoodToGo这个方法，判断是否准备好可以执行transition：</p>
+<pre><code>com/android/server/wm/WindowSurfacePlacer.java：
+
+int handleAppTransitionReadyLocked() &#123;
+   int appsCount = mService.mOpeningApps.size();
+   if (!transitionGoodToGo(appsCount, mTempTransitionReasons)) &#123;
+      return 0;
+｝
+//…
+if (DEBUG_APP_TRANSITIONS) Slog.v(TAG, &quot;**** GOOD TO GO&quot;);
+ mService.mH.removeMessages(H.APP_TRANSITION_TIMEOUT);//如果成功，从handler移除AppTransition超时处理
+//…
+&#125;
+
+//下面是个关键的地方， UnknownAppVisibilityController里面保存了在锁屏情况下启动Activity的AppWindowToken，导致不能正常的transition
+private boolean transitionGoodToGo(int appsCount, SparseIntArray outReasons) &#123;
+    //...
+    if (!mService.mAppTransition.isTimeout()) &#123;
+        //...
+        if (!mService.mUnknownAppVisibilityController.allResolved()) &#123;
+            if (DEBUG_APP_TRANSITIONS) &#123;
+                Slog.v(TAG, &quot;unknownApps is not empty: &quot;
+                        + mService.mUnknownAppVisibilityController.getDebugMessage());
+            &#125;
+            return false;
+        &#125;
+        //....
+        return false;
+    &#125;
+    return true;
+&#125;
+</code></pre><pre><code>LOG
+06-02 09:54:45.229 V/WindowSurfacePlacer(  777): unknownApps is not empty: app=AppWindowToken&#123;99d9676 token=Token&#123;85511 ActivityRecord&#123;5db03d9 u0 com.android.server.telecom/.components.UserCallActivity t288&#125;&#125;&#125; state=1
+//….
+06-02 09:54:45.278 V/WindowSurfacePlacer(  777): unknownApps is not empty: app=AppWindowToken&#123;99d9676 token=Token&#123;85511 ActivityRecord&#123;5db03d9 u0 com.android.server.telecom/.components.UserCallActivity t288&#125;&#125;&#125; state=2
+//…
+    //private static final int UNKNOWN_STATE_WAITING_RESUME = 1;
+    //private static final int UNKNOWN_STATE_WAITING_RELAYOUT = 2;
+</code></pre><p>可以看到日志UserCallActivity的state一直处于1和2的状态，阻塞了不能正常的AppTrasition</p>
+<p>尝试在加上条件测试看是否还会出现卡屏5s的现象:</p>
+<pre><code>com/android/server/wm/WindowSurfacePlacer.java：
+if (!mService.mUnknownAppVisibilityController.allResolved()&amp;&amp;
+!mService.mUnknownAppVisibilityController.getDebugMessage()
+.contains(“com.android.server.telecom/.components.UserCallActivity”)) &#123;
+    //…
+    return false;
+&#125;
+</code></pre><p>加上这个测试条件后就没有了卡屏5秒的情况，但是有了新问题，会出现flickers（闪烁），先显示Launcer，然后又快速地切换到显示InCallActivity。如果FUNC先解锁操作再执行拨打电话，也会出现同样的问题。这正是UnknownAppVisibilityController解决的问题。下面看UserCallActivity finish不掉的原因。</p>
+<h4 id="AMS-finish没有立即触发onDestroy的原因分析"><a href="#AMS-finish没有立即触发onDestroy的原因分析" class="headerlink" title="AMS  finish没有立即触发onDestroy的原因分析"></a>AMS  finish没有立即触发onDestroy的原因分析</h4><p>正常的情况下，在Activity#onCreate方法中直接调用finish()，在之后的onPause方法调用AMS的activityPaused，就会直接调用IApplicationThread#scheduleDestroyActivity的方法通知Activity执行onDestroy，然后执行AMS的activityDestroyed，将UnknownAppVisibilityController里面的AppWindow移除。然而锁屏的的情况有区别：</p>
+<pre><code>com/android/server/am/ActivityManagerService.java：
+@Override
+public final void activityPaused(IBinder token) &#123;
+   //…
+   ActivityStack stack = ActivityRecord.getStackLocked(token);
+   if (stack != null) &#123;
+      stack.activityPausedLocked(token, false);
+   &#125;
+&#125;
+</code></pre><pre><code>com/android/server/am/ActivityStack.java:
+
+final void activityPausedLocked(IBinder token, boolean timeout) &#123;
+    final ActivityRecord r = isInStackLocked(token);
+    mHandler.removeMessages(PAUSE_TIMEOUT_MSG, r);
+    //…
+    completePauseLocked(true /* resumeNext */, null /* resumingActivity */);
+   //…
+&#125;
+
+private void completePauseLocked(boolean resumeNext, ActivityRecord resuming) &#123;
+    ActivityRecord prev = mPausingActivity;
+    if (DEBUG_PAUSE) Slog.v(TAG_PAUSE, &quot;Complete pause: &quot; + prev);
+
+    if (prev != null) &#123;
+        final boolean wasStopping = prev.state == STOPPING;
+        prev.state = ActivityState.PAUSED;
+        if (prev.finishing) &#123;
+            if (DEBUG_PAUSE) Slog.v(TAG_PAUSE, &quot;Executing finish of activity: &quot; + prev);
+            prev = finishCurrentActivityLocked(prev, FINISH_AFTER_VISIBLE, false);
+        &#125; else&#123;//...&#125;
+
+    &#125;
+&#125;
+
+final ActivityRecord finishCurrentActivityLocked(ActivityRecord r, int mode, boolean oomAdj) &#123;
+    // First things first: if this activity is currently visible,
+    // and the resumed activity is not yet visible, then hold off on
+    // finishing until the resumed one becomes visible.
+    //这里的next是Launcher, r为UserCallActivity
+    final ActivityRecord next = mStackSupervisor.topRunningActivityLocked();
+    //可以看到上面的注释就是我们的这种场景 
+    //在锁屏的情况下会走到分支mode为FINISH_AFTER_VISIBLE，r.visible为true
+    //关键的是next.nowVisible为false，即Launcher现在也是不可见的
+    //所以就会将UserCallActivity放到 mStoppingActivities里面
+    if (mode == FINISH_AFTER_VISIBLE &amp;&amp; (r.visible || r.nowVisible)
+            &amp;&amp; next != null &amp;&amp; !next.nowVisible) &#123;
+        if (!mStackSupervisor.mStoppingActivities.contains(r)) &#123;
+            addToStopping(r, false /* scheduleIdle */, false /* idleDelayed */);
+        &#125;
+        if (DEBUG_STATES) Slog.v(TAG_STATES,
+                &quot;Moving to STOPPING: &quot;+ r + &quot; (finish requested)&quot;);
+        r.state = STOPPING;
+        return r;
+    &#125;
+     //…
+    //非锁屏下走这个分支，这里就会scheduleDestroyActivity
+
+    if (mode == FINISH_IMMEDIATELY
+            || (prevState == ActivityState.PAUSED
+            &amp;&amp; (mode == FINISH_AFTER_PAUSE || mStackId == PINNED_STACK_ID))
+            || finishingActivityInNonFocusedStack
+            || prevState == STOPPING
+            || prevState == STOPPED
+            || prevState == ActivityState.INITIALIZING) &#123;
+             boolean activityRemoved = destroyActivityLocked(r, true, &quot;finish-imm&quot;);
+        //....
+        return activityRemoved ? null : r;
+    &#125;
+&#125;
+</code></pre><p>这个时候dumpsys activity的信息如下，UserCallActivity被加到了waittingToStop列表里，没有执行scheduleDestroyActivity方法：</p>
+<pre><code>adb shell dumpsys activity:
+Activities waiting to stop:
+    TaskRecord&#123;28306a9 #433 A=com.android.server.telecom U=0 StackId=1 sz=1&#125;
+      Stop #0: ActivityRecord&#123;f676a30 u0 com.android.server.telecom/.components.UserCallActivity t433 f&#125;
+
+Activities waiting for another to become visible:
+    TaskRecord&#123;28306a9 #433 A=com.android.server.telecom U=0 StackId=1 sz=1&#125;
+      Wait #0: ActivityRecord&#123;f676a30 u0 com.android.server.telecom/.components.UserCallActivity t433 f&#125;
+// InCallActivity已经Resume等待显示
+ResumedActivity: ActivityRecord&#123;4cd5d55 u0 com.tct.dialer/com.android.incallui.InCallActivity t432&#125;
+</code></pre><p>之后的finish操作在ActivityManagerService#activityIdle方法中处理: (每次有Activity Resume完成，就会在主线程MessageQueue的Idler中调用，也有可能会在SystemServer中闲时调用)</p>
+<pre><code>com/android/server/am/ActivityManagerService.java:
+@Override
+public final void activityIdle(IBinder token, Configuration config, boolean stopProfiling) &#123;
+    synchronized (this) &#123;
+        ActivityStack stack = ActivityRecord.getStackLocked(token);
+        if (stack != null) &#123;
+            ActivityRecord r =
+                    mStackSupervisor.activityIdleInternalLocked(token, false /* fromTimeout */,
+                            false /* processPausingActivities */, config);
+        &#125;//….
+    &#125;
+&#125;
+</code></pre><p>接着调用ActivityStackSupervisor# activityIdleInternalLocked</p>
+<pre><code>final ActivityRecord activityIdleInternalLocked(final IBinder token, boolean fromTimeout,
+                                        boolean processPausingActivities, Configuration config) &#123;
+    if (DEBUG_ALL) Slog.v(TAG, &quot;Activity idle: &quot; + token);
+
+        // Atomically retrieve all of the other things to do.
+    //查找waitingToStop的Activity，如果这里能够找出来，那么在后面finish，调用Activity#onDestory
+    final ArrayList&lt;ActivityRecord&gt; stops = processStoppingActivitiesLocked(r,
+            true /* remove */, processPausingActivities);
+    NS = stops != null ? stops.size() : 0;
+    //…
+    // Stop any activities that are scheduled to do so but have been
+    // waiting for the next one to start.
+    for (int i = 0; i &lt; NS; i++) &#123;
+        r = stops.get(i);
+        final ActivityStack stack = r.getStack();
+        if (stack != null) &#123;
+            if (r.finishing) &#123;
+                stack.finishCurrentActivityLocked(r, ActivityStack.FINISH_IMMEDIATELY, false);
+            &#125; else &#123;
+                stack.stopActivityLocked(r);
+            &#125;
+        &#125;
+    &#125;
+    //...
+    return r;
+&#125;
+
+//查找操作waitingStop符合条件finish的
+final ArrayList&lt;ActivityRecord&gt; processStoppingActivitiesLocked(ActivityRecord idleActivity,
+                                    boolean remove, boolean processPausingActivities) &#123;
+    ArrayList&lt;ActivityRecord&gt; stops = null;
+//这个时候没有Activity可见，nowVisible为false
+    final boolean nowVisible = allResumedActivitiesVisible();
+    for (int activityNdx = mStoppingActivities.size() - 1; activityNdx &gt;= 0; --activityNdx) &#123;
+        ActivityRecord s = mStoppingActivities.get(activityNdx);//找到UserCallActivity
+        //waitingVisible为true，一直等待显示
+        boolean waitingVisible = mActivitiesWaitingForVisibleActivity.contains(s);
+        if (DEBUG_STATES) Slog.v(TAG, &quot;Stopping &quot; + s + &quot;: nowVisible=&quot; + nowVisible
+                + &quot; waitingVisible=&quot; + waitingVisible + &quot; finishing=&quot; + s.finishing);
+        if (waitingVisible &amp;&amp; nowVisible) &#123;//不会进入这个分支
+            mActivitiesWaitingForVisibleActivity.remove(s);
+            waitingVisible = false;//当InCallActivity show出来，置false，
+            if (s.finishing) &#123;
+                //...
+                s.setVisibility(false);
+            &#125;
+        &#125;
+        if (remove) &#123;    
+            final ActivityStack stack = s.getStack();
+            final boolean shouldSleepOrShutDown = stack != null
+                    ? stack.shouldSleepOrShutDownActivities()
+                    : mService.isSleepingOrShuttingDownLocked();
+            //waitingVisible为true，进入不了这个分支
+            if (!waitingVisible || shouldSleepOrShutDown) &#123;
+if (!processPausingActivities &amp;&amp; s.state == PAUSING) &#123;
+                    //...
+                    continue;
+                &#125;
+                if (DEBUG_STATES) Slog.v(TAG, &quot;Ready to stop: &quot; + s);
+                if (stops == null) &#123;
+                    stops = new ArrayList&lt;&gt;();
+                &#125;
+                stops.add(s);
+                mStoppingActivities.remove(activityNdx);
+            &#125;
+        &#125;
+    &#125;
+    return stops;
+&#125;
+</code></pre><p>由于此时的topActivity (InCallActivity)一直没有show出来，就会导致UserCallActivity一直处于waitingToStop的状态，直到InCallActivity show出来之后，才会destroy UserCallActivity。</p>
+<p>下面是日志，验证上面的分析：</p>
+<pre><code>LOG
+06-02 09:54:44.464 V/ActivityStackSupervisor(  777): Stopping ActivityRecord&#123;5db03d9 u0 com.android.server.telecom/.components.UserCal
+lActivity t288&#125;: nowVisible=false waitingVisible=false finishing=false
+
+06-02 09:54:45.073 V/ActivityStack_States(  777): Moving to STOPPING: ActivityRecord&#123;5db03d9 u0 com.android.server.telecom/.components.
+UserCallActivity t288 f&#125; (finish requested)
+
+06-02 09:54:45.283 V/ActivityStackSupervisor(  777): Stopping ActivityRecord&#123;5db03d9 u0 com.android.server.telecom/.components.
+UserCallActivity t288 f&#125;: nowVisible=false waitingVisible=true finishing=true
+
+06-02 09:54:47.607 V/ActivityStackSupervisor(  777): Stopping ActivityRecord&#123;5db03d9 u0 com.android.server.telecom/.components.
+UserCallActivity t288 f&#125;: nowVisible=false waitingVisible=true finishing=true
+
+06-02 09:54:51.186 V/ActivityStackSupervisor(  777): Stopping ActivityRecord&#123;5db03d9 u0 com.android.server.telecom/.components.
+UserCallActivity t288 f&#125;: nowVisible=true waitingVisible=false finishing=true
+
+06-02 09:54:51.187 V/ActivityStackSupervisor(  777): Ready to stop: ActivityRecord&#123;5db03d9 u0 com.android.server.telecom/.components.
+UserCallActivity t288 f&#125;
+
+06-02 09:54:51.287 V/ActivityStack_States(  777): Moving to FINISHING: ActivityRecord&#123;5db03d9 u0 com.android.server.telecom/.components.
+UserCallActivity t288 f&#125;
+</code></pre><h4 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h4><p>由于在锁屏界面启动Activity导致触发了WMS的 UnknownAppVisibilityController防止闪烁(显示Launcher之后又快速切换到目标Activity)的机制， UserCall Activity不能及时finish，就会导致一直处于卡屏状态，直到AppTransition超时机制才强制显示InCallActivity。</p>
+<p>UserCallActivity是Telecomm服务里面的组件，但是它又不是真正显示UI的Acivity，针对这种情况可以使用Telecom的placeCall接口可以规避掉这种情况。但是，不能保证所有启动的Acitivty都直接显示，比如原生的Google日历也会出现卡屏5秒现象，目前看来是原生Android的bug，对于这种情况，finish之后没有将不显示的窗口及时地从UnknownAppVisibilityController移除。</p>
+
+
+
+
+</body>
+</html>

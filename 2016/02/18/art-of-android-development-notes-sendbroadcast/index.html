@@ -1,0 +1,649 @@
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    
+<script src="/js/less.min.js"></script>
+
+    
+    
+<link rel="stylesheet" href="/css/main.css">
+
+    
+<link rel="stylesheet" href="/prettify/tomorrow.css">
+
+    
+<script src="/js/jquery-2.1.4.min.js"></script>
+
+    
+<script src="/js/raphael-min.js"></script>
+
+    
+<script src="/js/underscore-min.js"></script>
+
+    
+<script src="/js/sequence-diagram-min.js"></script>
+
+    
+<script src="/js/flowchart-latest.js"></script>
+
+    
+<script src="/prettify/prettify.js"></script>
+
+    
+<script src="/js/common.js"></script>
+
+    
+<script src="/js/gitment.browser.js"></script>
+
+    
+<link rel="stylesheet" href="/css/default.css">
+
+    
+<link rel="stylesheet" href="/lib/fancybox/dist/jquery.fancybox.css">
+
+
+    
+<script src="/lib/fancybox/dist/jquery.fancybox.js"></script>
+
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    
+    
+    <script>
+        (function (i, s, o, g, r, a, m) {
+            i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+                (i[r].q = i[r].q || []).push(arguments)
+            }, i[r].l = 1 * new Date(); a = s.createElement(o),
+                m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
+        })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+        ga('create', 'UA-71897482-1', 'auto');
+        ga('send', 'pageview');
+    </script>
+    
+    
+    <title>读书笔记:发送广播</title>
+    <meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=0.8, user-scalable=no">
+<meta name="generator" content="Hexo 6.3.0"></head>
+<body>
+
+<h3 id="Android开发艺术探索-四大组件的工作过程之发送广播"><a href="#Android开发艺术探索-四大组件的工作过程之发送广播" class="headerlink" title="Android开发艺术探索:四大组件的工作过程之发送广播"></a><a target="_blank" rel="noopener" href="http://www.amazon.cn/Android%E5%BC%80%E5%8F%91%E8%89%BA%E6%9C%AF%E6%8E%A2%E7%B4%A2-%E4%BB%BB%E7%8E%89%E5%88%9A/dp/B014HV1X3K/ref=sr_1_1?ie=UTF8&amp;qid=1451616304&amp;sr=8-1&amp;keywords=Android%E5%BC%80%E5%8F%91%E8%89%BA%E6%9C%AF%E6%8E%A2%E7%B4%A2">Android开发艺术探索</a>:四大组件的工作过程之发送广播</h3><p>发送广播分为普通广播，有序广播，Sticky广播，AMS会根据广播类型做相应的处理。</p>
+<h4 id="sendBroadcast"><a href="#sendBroadcast" class="headerlink" title="sendBroadcast"></a>sendBroadcast</h4><p>发送普通广播的入口在ContextImpl:</p>
+<pre><code>@Override
+public void sendBroadcast(Intent intent) &#123;
+    warnIfCallingFromSystemProcess();//系统进程调用打印日志
+    String resolvedType = intent.resolveTypeIfNeeded(getContentResolver());
+    try &#123;
+        intent.prepareToLeaveProcess();
+        ActivityManagerNative.getDefault().broadcastIntent(
+            mMainThread.getApplicationThread(), intent, resolvedType, null,
+            Activity.RESULT_OK, null, null, null, AppOpsManager.OP_NONE, false, false,
+            getUserId());
+    &#125; catch (RemoteException e) &#123;
+    &#125;
+&#125;
+</code></pre><p>几乎啥事没做直接调用ActivityManagerNative.getDefault()得到ActivityManagerProxy，向AMS发起IPC调用broadcastIntent，下面注释为上面参数调用的值:</p>
+<pre><code>public int broadcastIntent(IApplicationThread caller,
+        Intent intent, String resolvedType,  IIntentReceiver resultTo/*null*/,
+        int resultCode/*Activity.RESULT_OK*/, String resultData/*null*/, Bundle map/*null*/,
+        String requiredPermission/*null*/, int appOp/*AppOpsManager.OP_NONE*/, boolean serialized/*false*/,
+        boolean sticky/*false*/, int userId) throws RemoteException
+&#123;
+    Parcel data = Parcel.obtain();
+    Parcel reply = Parcel.obtain();
+    data.writeInterfaceToken(IActivityManager.descriptor);
+    data.writeStrongBinder(caller != null ? caller.asBinder() : null);
+    intent.writeToParcel(data, 0);
+    data.writeString(resolvedType);
+    data.writeStrongBinder(resultTo != null ? resultTo.asBinder() : null);
+    data.writeInt(resultCode);
+    data.writeString(resultData);
+    data.writeBundle(map);
+    data.writeString(requiredPermission);
+    data.writeInt(appOp);
+    data.writeInt(serialized ? 1 : 0);
+    data.writeInt(sticky ? 1 : 0);
+    data.writeInt(userId);
+    mRemote.transact(BROADCAST_INTENT_TRANSACTION, data, reply, 0);
+    reply.readException();
+    int res = reply.readInt();
+    reply.recycle();
+    data.recycle();
+    return res;
+&#125;
+</code></pre><p>然后进入到ActivityManagerService#broadcastIntent:</p>
+<pre><code>public final int broadcastIntent(IApplicationThread caller,
+        Intent intent, String resolvedType,  IIntentReceiver resultTo/*null*/,
+        int resultCode/*Activity.RESULT_OK*/, String resultData/*null*/, Bundle map/*null*/,
+        String requiredPermission/*null*/, int appOp/*AppOpsManager.OP_NONE*/, boolean serialized/*false*/,
+        boolean sticky/*false*/, int userId) &#123;
+    synchronized(this) &#123;
+        intent = verifyBroadcastLocked(intent);
+
+        final ProcessRecord callerApp = getRecordForAppLocked(caller);
+        final int callingPid = Binder.getCallingPid();
+        final int callingUid = Binder.getCallingUid();
+        final long origId = Binder.clearCallingIdentity();
+        int res = broadcastIntentLocked(callerApp,
+                callerApp != null ? callerApp.info.packageName : null,
+                intent, resolvedType, resultTo,
+                resultCode, resultData, map, requiredPermission, appOp, serialized, sticky,
+                callingPid, callingUid, userId);
+        Binder.restoreCallingIdentity(origId);
+        return res;
+    &#125;
+&#125;
+</code></pre><p>获取调用进程pid和uid，切换调用发送广播为AMS当前进程pid，调用broadcastIntentLocked进行处理:</p>
+<pre><code>private final int broadcastIntentLocked(ProcessRecord callerApp,
+        String callerPackage, Intent intent, String resolvedType,
+        IIntentReceiver resultTo, int resultCode, String resultData,
+        Bundle map, String requiredPermission, int appOp,
+        boolean ordered, boolean sticky, int callingPid, int callingUid,
+        int userId) &#123;
+    intent = new Intent(intent);
+
+    // By default broadcasts do not go to stopped apps.
+    //广播不向处于Stopped状态的App发送广播
+    intent.addFlags(Intent.FLAG_EXCLUDE_STOPPED_PACKAGES);
+
+    userId = handleIncomingUser(callingPid, callingUid, userId,
+            true, ALLOW_NON_FULL, &quot;broadcast&quot;, callerPackage);
+
+    //...
+
+    int callingAppId = UserHandle.getAppId(callingUid);
+    if (callingAppId == Process.SYSTEM_UID || callingAppId == Process.PHONE_UID
+        || callingAppId == Process.SHELL_UID || callingAppId == Process.BLUETOOTH_UID
+        || callingAppId == Process.NFC_UID || callingUid == 0) &#123;
+        //系统应用可以发送任何广播
+    &#125; else if (callerApp == null || !callerApp.persistent) &#123;
+       //...是否发送的是系统广播则抛异常,应该不会影响AMS进程吧?
+       if (AppGlobals.getPackageManager().isProtectedBroadcast(
+                        intent.getAction())) &#123;
+                    String msg = &quot;Permission Denial: not allowed to send broadcast &quot;
+                            + intent.getAction() + &quot; from pid=&quot;
+                            + callingPid + &quot;, uid=&quot; + callingUid;
+                    Slog.w(TAG, msg);
+                    throw new SecurityException(msg);
+          &#125;else if (AppWidgetManager.ACTION_APPWIDGET_CONFIGURE.equals(intent.getAction())) &#123;
+              //...
+          &#125;
+    &#125;
+
+    final String action = intent.getAction();
+    if (action != null) &#123;
+        switch (action) &#123;
+            //检查某些广播action的权限，比如BROADCAST_PACKAGE_REMOVED
+            //某些广播的特殊处理，比如package remove，进程状态的处理
+    &#125;
+
+    //sticky广播的处理
+    if (sticky) &#123;
+        //...
+    &#125;
+
+    //处理多用户下接受广播的userId
+    int[] users;
+    if (userId == UserHandle.USER_ALL) &#123;
+        // Caller wants broadcast to go to all started users.
+        users = mStartedUserArray;
+    &#125; else &#123;
+        // Caller wants broadcast to go to one specific user.
+        users = new int[] &#123;userId&#125;;
+    &#125;
+
+    List receivers = null;//静态注册的广播,从PackagerManagerService里面解析处理的
+    List&lt;BroadcastFilter&gt; registeredReceivers = null;//动态注册的广播,从mReceiverResolver里面取出来的
+
+    //如果设置了这个表示位那么只有动态注册的广播才能接收到
+    if ((intent.getFlags()&amp;Intent.FLAG_RECEIVER_REGISTERED_ONLY) == 0) &#123;
+        receivers = collectReceiverComponents(intent, resolvedType, callingUid, users);
+    &#125;
+    if (intent.getComponent() == null) &#123;
+        if (userId == UserHandle.USER_ALL &amp;&amp; callingUid == Process.SHELL_UID) &#123;
+            //...
+        &#125; else &#123;
+            registeredReceivers = mReceiverResolver.queryIntent(intent,
+                    resolvedType, false, userId);
+        &#125;
+    &#125;
+
+    //如果设置了这个标志位，那么将会替换队列里面还没有发出去的广播
+    final boolean replacePending = (intent.getFlags()&amp;Intent.FLAG_RECEIVER_REPLACE_PENDING) != 0;
+
+    int NR = registeredReceivers != null ? registeredReceivers.size() : 0;
+    //普通广播处理
+    if (!ordered &amp;&amp; NR &gt; 0) &#123;
+        final BroadcastQueue queue = broadcastQueueForIntent(intent);
+        BroadcastRecord r = new BroadcastRecord(queue, intent, callerApp,
+                callerPackage, callingPid, callingUid, resolvedType, requiredPermission,
+                appOp, registeredReceivers, resultTo, resultCode, resultData, map,
+                ordered, sticky, false, userId);
+        final boolean replaced = replacePending &amp;&amp; queue.replaceParallelBroadcastLocked(r);
+        if (!replaced) &#123;
+            queue.enqueueParallelBroadcastLocked(r);
+            queue.scheduleBroadcastsLocked();
+        &#125;
+        //处理完之后置null，并且NR为零，如果没有执行这一步那么说明是有序广播
+        registeredReceivers = null;
+        NR = 0;
+    &#125;
+
+    //...静态注册广播的处理
+
+    return ActivityManager.BROADCAST_SUCCESS;
+&#125;
+</code></pre><p>首先,判断是否是系统广播,非系统应用不能发送系统广播。检查某些广播action的权限，比如BROADCAST_PACKAGE_REMOVED 某些广播的特殊处理，比如如果是package remove，进程状态需要处理。讲静态注册的广播和动态注册的广播分开处理，分别保存在receivers和registeredReceivers里面，并且先处理动态注册的广播。</p>
+<p>给Intent设置了Intent.FLAG_RECEIVER_REPLACE_PENDING这个标志位，那个将会替换掉队列里面还没有发送出去的广播。<br>给Intent设置了Intent.FLAG_RECEIVER_REGISTERED_ONLY这个标志位，那么将会只有动态注册的广播才能收到。<br>处理完之后置null，并且NR为零，如果没有执行这一步那么说明是有序广播。<br>根据Intent的类型调用broadcastQueueForIntent得到BroadcastQueue:</p>
+<pre><code>BroadcastQueue broadcastQueueForIntent(Intent intent) &#123;
+    final boolean isFg = (intent.getFlags() &amp; Intent.FLAG_RECEIVER_FOREGROUND) != 0;
+    //没有指定Intent.FLAG_RECEIVER_FOREGROUND，得到的就是mBgBroadcastQueue
+    return (isFg) ? mFgBroadcastQueue : mBgBroadcastQueue;
+&#125;
+</code></pre><p>AMS里面保存了两个用于发送广播的队列，用于保存前台和后台的优先级，在实例化AMS的时候就会创建，并且关联的Handelr也是AMS的Handelr。ServerThread类型是HandlerThread，所有处理广播是在AMS的子线程里面处理的:</p>
+<pre><code>public ActivityManagerService(Context systemContext) &#123;
+    mContext = systemContext;
+    mSystemThread = ActivityThread.currentActivityThread();
+
+    //ServerThread是一个HandlerThread,s
+    mHandlerThread = new ServiceThread(TAG,
+            android.os.Process.THREAD_PRIORITY_FOREGROUND, false /*allowIo*/);
+    mHandlerThread.start();
+    mHandler = new MainHandler(mHandlerThread.getLooper());
+
+    mFgBroadcastQueue = new BroadcastQueue(this, mHandler,
+            &quot;foreground&quot;, /**10s**/BROADCAST_FG_TIMEOUT, false);
+
+    //最后一个参数true, we can delay broadcasts while waiting services to finish in the previous receiver&#39;s process.
+    mBgBroadcastQueue = new BroadcastQueue(this, mHandler,
+            &quot;background&quot;, /**60s**/BROADCAST_BG_TIMEOUT, true);
+    //...
+  &#125;
+</code></pre><p>将广播集合放到queue里面，然后调用scheduleBroadcastsLocked处理分发广播:</p>
+<pre><code>public final class BroadcastQueue &#123;
+
+  public void scheduleBroadcastsLocked() &#123;
+      //广播还没有发到队列里面则返回
+      if (mBroadcastsScheduled) &#123;
+          return;
+      &#125;
+      mHandler.sendMessage(mHandler.obtainMessage(BROADCAST_INTENT_MSG, this));
+      mBroadcastsScheduled = true;
+  &#125;
+&#125;
+</code></pre><p>向Handler发消息:</p>
+<pre><code>private final class BroadcastHandler extends Handler &#123;
+    //...
+
+    @Override
+    public void handleMessage(Message msg) &#123;
+        switch (msg.what) &#123;
+            case BROADCAST_INTENT_MSG: &#123;
+                processNextBroadcast(true);
+            &#125; break;
+           //...
+        &#125;
+    &#125;
+&#125;;
+
+final void processNextBroadcast(boolean fromMsg) &#123;
+      synchronized(mService) &#123;
+          BroadcastRecord r;
+          if (fromMsg) &#123;
+              mBroadcastsScheduled = false;
+          &#125;
+
+          //找到添加在无序广播集合里面的BroadcastRecord
+          while (mParallelBroadcasts.size() &gt; 0) &#123;
+              r = mParallelBroadcasts.remove(0);
+              r.dispatchTime = SystemClock.uptimeMillis();
+              r.dispatchClockTime = System.currentTimeMillis();
+              final int N = r.receivers.size();
+              for (int i=0; i&lt;N; i++) &#123;
+                  Object target = r.receivers.get(i);
+                  deliverToRegisteredReceiverLocked(r, (BroadcastFilter)target, false);
+              &#125;
+              addBroadcastToHistoryLocked(r);
+          &#125;
+        //...
+        &#125;       
+&#125;
+</code></pre><p>mParallelBroadcasts集合里面的内容就是刚才调用enqueueParallelBroadcastLocked添加进去的。<br>调用deliverToRegisteredReceiverLocked做分发处理:</p>
+<pre><code>//分发广播到某个接受者
+private final void deliverToRegisteredReceiverLocked(BroadcastRecord r,
+        BroadcastFilter filter, boolean ordered) &#123;
+    boolean skip = false;
+    //如果注册广播的时候声明了权限，需要检查发送者是否拥有这个权限
+    if (filter.requiredPermission != null) &#123;
+        int perm = mService.checkComponentPermission(filter.requiredPermission,
+                r.callingPid, r.callingUid, -1, true);
+        if (perm != PackageManager.PERMISSION_GRANTED) &#123;
+            skip = true;
+        &#125;
+    &#125;
+
+    //检查接受者的权限
+    if (!skip &amp;&amp; r.requiredPermission != null) &#123;
+        int perm = mService.checkComponentPermission(r.requiredPermission,
+                filter.receiverList.pid, filter.receiverList.uid, -1, true);
+        if (perm != PackageManager.PERMISSION_GRANTED) &#123;
+            skip = true;
+        &#125;
+    &#125;
+
+    //...
+
+    //如果接受者进程挂掉这不分发
+    if (filter.receiverList.app == null || filter.receiverList.app.crashing) &#123;
+        skip = true;
+    &#125;
+
+    if (!skip) &#123;
+        if (ordered) &#123;
+            //...
+        &#125;
+        try &#123;
+            performReceiveLocked(filter.receiverList.app, filter.receiverList.receiver,
+                new Intent(r.intent), r.resultCode, r.resultData,
+                r.resultExtras, r.ordered, r.initialSticky, r.userId);
+           //...
+        &#125; catch (RemoteException e) &#123;
+          //...
+        &#125;
+    &#125;
+&#125;
+</code></pre><p>检查接受者和发送者的权限，没有问题就调用performReceiveLocked做真正的广播处理:</p>
+<pre><code>private static void performReceiveLocked(ProcessRecord app, IIntentReceiver receiver,
+        Intent intent, int resultCode, String data, Bundle extras,
+        boolean ordered, boolean sticky, int sendingUser) throws RemoteException &#123;
+    if (app != null) &#123;
+        if (app.thread != null) &#123;
+            app.thread.scheduleRegisteredReceiver(receiver, intent, resultCode,
+                    data, extras, ordered, sticky, sendingUser, app.repProcState);
+        &#125; else &#123;
+            // Application has died. Receiver doesn&#39;t exist.
+            throw new RemoteException(&quot;app.thread must not be null&quot;);
+        &#125;
+    &#125; else &#123;
+        receiver.performReceive(intent, resultCode, data, extras, ordered,
+                sticky, sendingUser);
+    &#125;
+&#125;
+</code></pre><p>向注册广播的客户端发起IPC调用scheduleRegisteredReceiver，所以就执行到ApplicationThread#scheduleRegisteredReceiver:</p>
+<pre><code>public void scheduleRegisteredReceiver(IIntentReceiver receiver, Intent intent,
+        int resultCode, String dataStr, Bundle extras, boolean ordered,
+        boolean sticky, int sendingUser, int processState) throws RemoteException &#123;
+    receiver.performReceive(intent, resultCode, dataStr, extras, ordered,
+            sticky, sendingUser);
+&#125;
+</code></pre><p>执行注册广播的时候往LoadedApk里面添加的InnerReceiver的方法performReceive:</p>
+<pre><code>final static class InnerReceiver extends IIntentReceiver.Stub &#123;
+            final WeakReference&lt;LoadedApk.ReceiverDispatcher&gt; mDispatcher;
+            final LoadedApk.ReceiverDispatcher mStrongRef;
+
+            public void performReceive(Intent intent, int resultCode, String data,
+                    Bundle extras, boolean ordered, boolean sticky, int sendingUser) &#123;
+                LoadedApk.ReceiverDispatcher rd = mDispatcher.get();
+
+                if (rd != null) &#123;
+                    rd.performReceive(intent, resultCode, data, extras,
+                            ordered, sticky, sendingUser);
+                &#125; else &#123;
+                  //...
+                &#125;
+            &#125;
+        &#125;
+</code></pre><p>接着执ReceiverDispatcher#performReceive:</p>
+<pre><code>public void performReceive(Intent intent, int resultCode, String data,
+        Bundle extras, boolean ordered, boolean sticky, int sendingUser) &#123;
+    Args args = new Args(intent, resultCode, data, extras, ordered,
+            sticky, sendingUser);
+    if (!mActivityThread.post(args)) &#123;
+        if (mRegistered &amp;&amp; ordered) &#123;
+            //...有序广播需要做相应的处理
+        &#125;
+    &#125;
+&#125;
+</code></pre><p>Args是一个Runnable对象，向主线程的Handler发送Args里面的内容为:</p>
+<pre><code>final class Args extends BroadcastReceiver.PendingResult implements Runnable &#123;
+           private Intent mCurIntent;
+           private final boolean mOrdered;
+
+
+           public void run() &#123;
+               final BroadcastReceiver receiver = mReceiver;
+               final boolean ordered = mOrdered;
+               final Intent intent = mCurIntent;
+               mCurIntent = null;
+
+               //...
+
+               try &#123;
+                   ClassLoader cl =  mReceiver.getClass().getClassLoader();
+                   intent.setExtrasClassLoader(cl);
+                   setExtrasClassLoader(cl);
+                   receiver.setPendingResult(this);
+                   receiver.onReceive(mContext, intent);
+               &#125; catch (Exception e) &#123;
+                   //...
+               &#125;
+
+              //...
+           &#125;
+       &#125;
+</code></pre><p>执行动态注册的广播onReceive方法。静态注册的广播与动态注册的广播处理方式不同，是放在receivers里面处理的，并且处理方式是串行的，防止并发启动多个广播接受者的进程。</p>
+<pre><code>private final int broadcastIntentLocked(ProcessRecord callerApp,
+        String callerPackage, Intent intent, String resolvedType,
+        IIntentReceiver resultTo, int resultCode, String resultData,
+        Bundle map, String requiredPermission, int appOp,
+        boolean ordered, boolean sticky, int callingPid, int callingUid,
+        int userId) &#123;
+
+        //...静态注册广播的处理
+
+        //这个会将有序广播和静态注册的广播根据优先级合并在一起
+        // Merge into one list.
+        int ir = 0;
+        if (receivers != null) &#123;
+            //注释说得很清楚，防止安装应用接受PACKAGE_ADD这个广播将自身启动,被安装的应用如果静态监听了,需要去掉
+
+            // A special case for PACKAGE_ADDED: do not allow the package
+            // being added to see this broadcast.  This prevents them from
+            // using this as a back door to get run as soon as they are
+            // installed.  Maybe in the future we want to have a special install
+            // broadcast or such for apps, but we&#39;d like to deliberately make
+            // this decision.
+            String skipPackages[] = null;
+            if (Intent.ACTION_PACKAGE_ADDED.equals(intent.getAction())
+                    || Intent.ACTION_PACKAGE_RESTARTED.equals(intent.getAction())
+                    || Intent.ACTION_PACKAGE_DATA_CLEARED.equals(intent.getAction())) &#123;
+                Uri data = intent.getData();
+                if (data != null) &#123;
+                    String pkgName = data.getSchemeSpecificPart();
+                    if (pkgName != null) &#123;
+                        skipPackages = new String[] &#123; pkgName &#125;;
+                    &#125;
+                &#125;
+            &#125; else if (Intent.ACTION_EXTERNAL_APPLICATIONS_AVAILABLE.equals(intent.getAction())) &#123;
+                skipPackages = intent.getStringArrayExtra(Intent.EXTRA_CHANGED_PACKAGE_LIST);
+            &#125;
+            if (skipPackages != null &amp;&amp; (skipPackages.length &gt; 0)) &#123;
+                for (String skipPackage : skipPackages) &#123;
+                    if (skipPackage != null) &#123;
+                        int NT = receivers.size();
+                        for (int it=0; it&lt;NT; it++) &#123;
+                            ResolveInfo curt = (ResolveInfo)receivers.get(it);
+                            if (curt.activityInfo.packageName.equals(skipPackage)) &#123;
+                                receivers.remove(it);
+                                it--;
+                                NT--;
+                            &#125;
+                        &#125;
+                    &#125;
+                &#125;
+            &#125;
+
+            int NT = receivers != null ? receivers.size() : 0;
+            int it = 0;
+            ResolveInfo curt = null;
+            BroadcastFilter curr = null;
+            while (it &lt; NT &amp;&amp; ir &lt; NR) &#123;
+                if (curt == null) &#123;
+                    curt = (ResolveInfo)receivers.get(it);
+                &#125;
+                if (curr == null) &#123;
+                    curr = registeredReceivers.get(ir);
+                &#125;
+                //动态注册的有序广播将会在这里根据优先级排序
+                if (curr.getPriority() &gt;= curt.priority) &#123;
+                    // Insert this broadcast record into the final list.
+                    receivers.add(it, curr);
+                    ir++;
+                    curr = null;
+                    it++;
+                    NT++;
+                &#125; else &#123;
+                    // Skip to the next ResolveInfo in the final list.
+                    it++;
+                    curt = null;
+                &#125;
+            &#125;
+        &#125;
+        while (ir &lt; NR) &#123;
+            if (receivers == null) &#123;
+                receivers = new ArrayList();
+            &#125;
+            receivers.add(registeredReceivers.get(ir));
+            ir++;
+        &#125;
+
+        if ((receivers != null &amp;&amp; receivers.size() &gt; 0)
+                || resultTo != null) &#123;
+            BroadcastQueue queue = broadcastQueueForIntent(intent);
+            BroadcastRecord r = new BroadcastRecord(queue, intent, callerApp,
+                    callerPackage, callingPid, callingUid, resolvedType,
+                    requiredPermission, appOp, receivers, resultTo, resultCode,
+                    resultData, map, ordered, sticky, false, userId);
+            boolean replaced = replacePending &amp;&amp; queue.replaceOrderedBroadcastLocked(r);
+            if (!replaced) &#123;
+                queue.enqueueOrderedBroadcastLocked(r);
+                queue.scheduleBroadcastsLocked();
+            &#125;
+        &#125;
+
+        return ActivityManager.BROADCAST_SUCCESS;&#125;
+</code></pre><p>上面的代码就是静态广播和有序广播的处理，会将静态注册的广播和有序广播放到统一放到receivers里面，然后根据某些情况过滤接受者，然后调用<br>queue.enqueueOrderedBroadcastLocked(r);将这个一次要发送的广播相关信息放到有序广播的集合mOrderedBroadcasts里，然后在调用queue做分发处理:</p>
+<pre><code>public void scheduleBroadcastsLocked() &#123;
+    //上一个消息还没得到处理就先返回
+    if (mBroadcastsScheduled) &#123;
+        return;
+    &#125;
+    mHandler.sendMessage(mHandler.obtainMessage(BROADCAST_INTENT_MSG, this));
+    mBroadcastsScheduled = true;
+&#125;
+</code></pre><p>向Hanlder发送消息之后调用processNextBroadcast做处理:</p>
+<pre><code>final void processNextBroadcast(boolean fromMsg) &#123;
+    synchronized(mService) &#123;
+        BroadcastRecord r;
+        if (fromMsg) &#123;
+            mBroadcastsScheduled = false;
+        &#125;
+
+        while (mParallelBroadcasts.size() &gt; 0) &#123;
+            //无序广播的处理  
+         &#125;
+
+        //新启动的进程的广播正在被处理，那么返回继续等待
+        if (mPendingBroadcast != null) &#123;
+            boolean isDead;
+            synchronized (mService.mPidsSelfLocked) &#123;
+                ProcessRecord proc = mService.mPidsSelfLocked.get(mPendingBroadcast.curApp.pid);
+                isDead = proc == null || proc.crashing;
+            &#125;
+            if (!isDead) &#123;
+                // It&#39;s still alive, so keep waiting
+                return;
+            &#125; else &#123;
+                mPendingBroadcast.state = BroadcastRecord.IDLE;
+                mPendingBroadcast.nextReceiver = mPendingBroadcastRecvIndex;
+                mPendingBroadcast = null;
+            &#125;
+        &#125;
+        boolean looped = false;
+        do &#123;
+            //..找到集合里面的第一个广播，并且判断是不是最后一个广播做相应处理
+            r = mOrderedBroadcasts.get(0);
+            boolean forceReceive = false;
+            mOrderedBroadcasts.remove(0);
+            //..
+            &#125;
+        &#125; while (r == null);
+
+        int recIdx = r.nextReceiver++;
+
+        Object nextReceiver = r.receivers.get(recIdx);
+        //如果广播类型是BroadcastFilter说明是动态注册的有序广播
+        if (nextReceiver instanceof BroadcastFilter) &#123;
+                  BroadcastFilter filter = (BroadcastFilter)nextReceiver;
+                  deliverToRegisteredReceiverLocked(r, filter, r.ordered);
+                  if (r.receiver == null || !r.ordered) &#123;
+                      r.state = BroadcastRecord.IDLE;
+                      scheduleBroadcastsLocked();
+                  &#125;
+                  return;
+              &#125;
+
+        ResolveInfo info =  (ResolveInfo)nextReceiver;
+        ComponentName component = new ComponentName(
+                info.activityInfo.applicationInfo.packageName,
+                info.activityInfo.name);
+
+        //检查权限相关操作...
+
+        // Is this receiver&#39;s application already running?
+        ProcessRecord app = mService.getProcessRecordLocked(targetProcess,
+                info.activityInfo.applicationInfo.uid, false);
+        if (app != null &amp;&amp; app.thread != null) &#123;
+            try &#123;
+                app.addPackage(info.activityInfo.packageName,
+                        info.activityInfo.applicationInfo.versionCode, mService.mProcessStats);
+                //如果静态注册的接受者进程已经存在，那么就直接处理，不用开启进程
+                processCurBroadcastLocked(r, app);
+                return;
+            &#125; catch (RemoteException e) &#123;
+                Slog.w(TAG, &quot;Exception when sending broadcast to &quot;
+                      + r.curComponent, e);
+            &#125; catch (RuntimeException e) &#123;
+                 return;
+            &#125;
+
+        &#125;
+
+        //开启进程处理,并将mPendingBroadcast赋值,等待进程启动之后向AMS发起attachApplication请求
+         if((r.curApp=mService.startProcessLocked(targetProcess,
+                info.activityInfo.applicationInfo, true,
+                r.intent.getFlags() | Intent.FLAG_FROM_BACKGROUND,
+                &quot;broadcast&quot;, r.curComponent,
+                (r.intent.getFlags()&amp;Intent.FLAG_RECEIVER_BOOT_UPGRADE) != 0, false, false))
+                        == null) &#123;
+             finishReceiverLocked(r, r.resultCode, r.resultData,
+                    r.resultExtras, r.resultAbort, false);
+            scheduleBroadcastsLocked();
+            r.state = BroadcastRecord.IDLE;
+            return;
+        &#125;
+
+        mPendingBroadcast = r;
+        mPendingBroadcastRecvIndex = recIdx;
+    &#125;
+&#125;
+</code></pre><p>从有序广播集合里面取得一个接收者，判断是静态注册的广播还是动态注册的广播，如果是动态注册的广播，那么就是有序广播，直接向客户端逐个分发。</p>
+<p>如果是静态注册的广播，先判断接受者的进程是否存在，如果存在就不用开启进程。如果不存在，开启进程处理,并将mPendingBroadcast赋值,等待进程启动之后向AMS发起attachApplication请求，再处理放到mPendingBroadcast的广播。</p>
+
+
+
+
+</body>
+</html>

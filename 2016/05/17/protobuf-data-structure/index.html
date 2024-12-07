@@ -1,0 +1,206 @@
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    
+<script src="/js/less.min.js"></script>
+
+    
+    
+<link rel="stylesheet" href="/css/main.css">
+
+    
+<link rel="stylesheet" href="/prettify/tomorrow.css">
+
+    
+<script src="/js/jquery-2.1.4.min.js"></script>
+
+    
+<script src="/js/raphael-min.js"></script>
+
+    
+<script src="/js/underscore-min.js"></script>
+
+    
+<script src="/js/sequence-diagram-min.js"></script>
+
+    
+<script src="/js/flowchart-latest.js"></script>
+
+    
+<script src="/prettify/prettify.js"></script>
+
+    
+<script src="/js/common.js"></script>
+
+    
+<script src="/js/gitment.browser.js"></script>
+
+    
+<link rel="stylesheet" href="/css/default.css">
+
+    
+<link rel="stylesheet" href="/lib/fancybox/dist/jquery.fancybox.css">
+
+
+    
+<script src="/lib/fancybox/dist/jquery.fancybox.js"></script>
+
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    
+    
+    <script>
+        (function (i, s, o, g, r, a, m) {
+            i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+                (i[r].q = i[r].q || []).push(arguments)
+            }, i[r].l = 1 * new Date(); a = s.createElement(o),
+                m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
+        })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+        ga('create', 'UA-71897482-1', 'auto');
+        ga('send', 'pageview');
+    </script>
+    
+    
+    <title>Protobuf数据格式解析</title>
+    <meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=0.8, user-scalable=no">
+<meta name="generator" content="Hexo 6.3.0"></head>
+<body>
+
+<h3 id="Protobuf数据格式解析"><a href="#Protobuf数据格式解析" class="headerlink" title="Protobuf数据格式解析"></a>Protobuf数据格式解析</h3><p>Protobuf是Google开源的一款类似于Json，XML数据交换格式，其内部数据是纯二进制格式，不依赖于语言和平台，具有简单，数据量小，快速等优点。目前用于序列化与反序列化官方支持的语言有C++，C#， GO， JAVA， PYTHON。适用于大小在1M以内的数据，因为像在移动设备平台，内存是很珍贵。</p>
+<p>使用方法也比较简单:</p>
+<ul>
+<li>定义用于消息文件.proto</li>
+<li>使用protobuf的编译器编译消息文件</li>
+<li>使用编译好对应语言的类文件进行消息的序列化与反序列化</li>
+</ul>
+<p>先来定义一个简单的消息:</p>
+<pre><code>message Person &#123;
+   int32 id = 1;//24
+   string name = 2;//wujingchao
+   string email = 3;//wujingchao92@gmail.com
+&#125;
+</code></pre><p>实际的二进制消息为:</p>
+<p>08 18 12 0a 77 75 6a 69 6e 67 63 68 61 6f 1a 16 77 75 6a 69 6e 67 63 68 61 6f 39 32 40 67 6d 61 69 6c 2e 63 6f 6d</p>
+<p>下面就讲解这段二进制流数据是怎么组成的：</p>
+<h4 id="Varints"><a href="#Varints" class="headerlink" title="Varints"></a>Varints</h4><p>一般情况下int类型都是固定4个字节，protobuf定义了一种变长的int，每个字节最高位表示后面还有没有字节，低7位就为实际的值，并且使用小端的表示方法。例如1,varint的表示方法就为:</p>
+<pre><code>0000 0001
+</code></pre><p>是不是这样就省了三个字节。</p>
+<p>再例如300,4字节表示为:10 0101100,varint表示为:</p>
+<pre><code>10101100 00000010
+</code></pre><p>所以前面消息为Person的id的值为00011000，即0x18。</p>
+<p>负数的最高位为1，如果负数也使用这种方式表示就会出现一个问题,int32总是需要5个字节，int64总是需要10个字节。</p>
+<p>所以定义了另外一种类型:sint32,sint64。采用ZigZag编码，所有的负数都使用正数表示,计算方式:</p>
+<ul>
+<li>sint32<br>  (n &lt;&lt; 1) ^ (n &gt;&gt; 31)</li>
+<li>sint64<br>  (n &lt;&lt; 1) ^ (n &gt;&gt; 63)</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Signed Original</th>
+<th>Encoded As</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<td>-1</td>
+<td>1</td>
+</tr>
+<tr>
+<td>1</td>
+<td>2</td>
+</tr>
+<tr>
+<td>-2</td>
+<td>3</td>
+</tr>
+<tr>
+<td>2147483647</td>
+<td>4294967294</td>
+</tr>
+<tr>
+<td>-2147483648</td>
+<td>4294967295</td>
+</tr>
+</tbody>
+</table>
+<p>使用Varint编码的类型有int32, int64, uint32, uint64, sint32, sint64, bool, enum。Java里面没有对应的无符号类型，int32与uint32一样。</p>
+<h4 id="Wire-Type"><a href="#Wire-Type" class="headerlink" title="Wire Type"></a>Wire Type</h4><p>每个消息项前面都会有对应的tag，才能解析对应的数据类型，表示tag的数据类型也是Varint。</p>
+<p>tag的计算方式: (field_number &lt;&lt; 3) | wire_type</p>
+<p>每种数据类型都有对应的wire_type:</p>
+<table>
+<thead>
+<tr>
+<th>Wire Type</th>
+<th>Meaning Used For</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>Varint  int32, int64, uint32, uint64, sint32, sint64, bool, enum</td>
+</tr>
+<tr>
+<td>1</td>
+<td>64-bit  fixed64, sfixed64, double</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Length-delimited    string, bytes, embedded messages, packed repeated fields</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Start group groups (deprecated)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>End group   groups (deprecated)</td>
+</tr>
+<tr>
+<td>5</td>
+<td>32-bit  fixed32, sfixed32, float</td>
+</tr>
+</tbody>
+</table>
+<p>所以wire_type最多只能支持8种，目前有6种。</p>
+<p>所以前面Person的id,field_number为1,wire_type为0，所以对应的tag为</p>
+<pre><code>1 &lt;&lt;&lt; 3 | 0  = 0x08
+</code></pre><p>Person的name,field_number为2,wire_type为2,所以对应的tag为</p>
+<pre><code>2 &lt;&lt;&lt; 3 | 2 = 0x12
+</code></pre><p>对应Length-delimited的wire type,后面紧跟着的Varint类型表示数据的字节数。</p>
+<p>所以name的tag后面紧跟的0x0a表示后面的数据长度为10个字节，即”wujingchao”的UTF-8 编码或者ASCII值:</p>
+<p>08 18 12 0a <font color="red">77 75 6a 69 6e 67 63 68 61 6f</font> 1a 16 </p>
+<p>嵌套的消息类型embedded messages与packed repeated fields也是使用这种方式表示，对应默认值的数据，是不会写进protobuf消息里面的。</p>
+<p>packed repeated与repeated的区别在于编码方式不一样，repeated将多个属性类型与值分开存储。而packed repeated采用Length-delimited方式。下面这个是官方文档的例子:</p>
+<pre><code>message Test4 &#123;
+    repeated int32 d = 4 [packed=true];
+&#125;
+
+22        // tag (field number 4, wire type 2)
+06        // payload size (6 bytes)
+03        // first element (varint 3)
+8E 02     // second element (varint 270)
+9E A7 05  // third element (varint 86942)
+</code></pre><p>如果没有packed的属性是这样存储的:</p>
+<pre><code>20 //tag(field number 4,wire type 0)
+03 //first element (varint 3)
+20 //tag(field number 4,wire type 0)
+8E 02//second element (varint 270)
+20 //tag(field number 4,wire type 0)
+9E A7 05  // third element (varint 86942)
+</code></pre><p>是不是这种方式比较节省内存，所以proto3的repeated默认就是使用packed这种方式来存储。(proto2与proto3区别在于.proto的语法)。</p>
+<p>有了以上的相关概念，我们在读protobuf的源码就比较容易了。</p>
+<p>参考:<a target="_blank" rel="noopener" href="https://developers.google.com/protocol-buffers/docs/encoding">https://developers.google.com/protocol-buffers/docs/encoding</a></p>
+
+
+
+
+</body>
+</html>

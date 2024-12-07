@@ -1,0 +1,512 @@
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    
+<script src="/js/less.min.js"></script>
+
+    
+    
+<link rel="stylesheet" href="/css/main.css">
+
+    
+<link rel="stylesheet" href="/prettify/tomorrow.css">
+
+    
+<script src="/js/jquery-2.1.4.min.js"></script>
+
+    
+<script src="/js/raphael-min.js"></script>
+
+    
+<script src="/js/underscore-min.js"></script>
+
+    
+<script src="/js/sequence-diagram-min.js"></script>
+
+    
+<script src="/js/flowchart-latest.js"></script>
+
+    
+<script src="/prettify/prettify.js"></script>
+
+    
+<script src="/js/common.js"></script>
+
+    
+<script src="/js/gitment.browser.js"></script>
+
+    
+<link rel="stylesheet" href="/css/default.css">
+
+    
+<link rel="stylesheet" href="/lib/fancybox/dist/jquery.fancybox.css">
+
+
+    
+<script src="/lib/fancybox/dist/jquery.fancybox.js"></script>
+
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    
+    
+    <script>
+        (function (i, s, o, g, r, a, m) {
+            i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+                (i[r].q = i[r].q || []).push(arguments)
+            }, i[r].l = 1 * new Date(); a = s.createElement(o),
+                m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
+        })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+        ga('create', 'UA-71897482-1', 'auto');
+        ga('send', 'pageview');
+    </script>
+    
+    
+    <title>读书笔记:理解Window和WindowManager</title>
+    <meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=0.8, user-scalable=no">
+<meta name="generator" content="Hexo 6.3.0"></head>
+<body>
+
+<h3 id="Android开发艺术探索-理解-Window-和-WindowManager"><a href="#Android开发艺术探索-理解-Window-和-WindowManager" class="headerlink" title="Android开发艺术探索:理解 Window 和 WindowManager"></a><a target="_blank" rel="noopener" href="http://www.amazon.cn/Android%E5%BC%80%E5%8F%91%E8%89%BA%E6%9C%AF%E6%8E%A2%E7%B4%A2-%E4%BB%BB%E7%8E%89%E5%88%9A/dp/B014HV1X3K/ref=sr_1_1?ie=UTF8&amp;qid=1451616304&amp;sr=8-1&amp;keywords=Android%E5%BC%80%E5%8F%91%E8%89%BA%E6%9C%AF%E6%8E%A2%E7%B4%A2">Android开发艺术探索</a>:理解 Window 和 WindowManager</h3><p>Android中的所有视图都是通过Window来呈现的，View都是被加载到Window里面，就是说Window是View的实际管理者，前面说的触摸事件就是从Window开始分发。</p>
+<h4 id="Window和WindowManager"><a href="#Window和WindowManager" class="headerlink" title="Window和WindowManager"></a>Window和WindowManager</h4><p>添加Window:</p>
+<pre><code class="java">private void addWindow() &#123;
+    final Button floatingButton  = new Button(this);
+    floatingButton.setText(&quot;Floating Button&quot;);
+    final WindowManager wm = (WindowManager) this.getSystemService(Context.WINDOW_SERVICE);
+    final WindowManager.LayoutParams params = new WindowManager.LayoutParams(WindowManager.LayoutParams.WRAP_CONTENT,
+                                            WindowManager.LayoutParams.WRAP_CONTENT,0,0, PixelFormat.TRANSPARENT);
+    params.gravity = Gravity.TOP|Gravity.LEFT;
+    params.x = 0;
+    params.y = 0;
+    params.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+                    | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
+                    | WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED;
+    wm.addView(floatingButton,params);
+    floatingButton.setOnTouchListener(new View.OnTouchListener() &#123;
+        float lastRawX;
+        float lastRawY;
+        @Override
+        public boolean onTouch(View v, MotionEvent event) &#123;
+            if(event.getActionMasked() == MotionEvent.ACTION_MOVE) &#123;
+                params.x += event.getRawX() - lastRawX;
+                params.y += event.getRawY() - lastRawY;
+                wm.updateViewLayout(floatingButton,params);
+            &#125;
+            lastRawX = event.getRawX();
+            lastRawY = event.getRawY();
+            return false;
+        &#125;
+    &#125;);
+&#125;
+</code></pre>
+<p>Flags表示Window的属性:</p>
+<ul>
+<li><p>LayoutParams.FLAG_NOT_FOCUSABLE:不需要获得焦点和输入事件，如果不设置，其下面的其他的窗口将无法点击，并且默认会启用FLAG_NOT_TOUCH_MODAL</p>
+</li>
+<li><p>LayoutParams.FLAG_NOT_TOUCH_MODAL:Window区域类的单击事件自己处理，不会拦截其他Window的单击事件，一般情况下都需要开启</p>
+</li>
+<li><p>LayoutParams.FLAG_SHOW_WHEN_LOCKED 锁屏显示</p>
+</li>
+</ul>
+<p>Window的位置需要结合gravity才能确定，上面的代码给 Button 设置了OnTouchEvent，不断的根据手指触摸的位置更新View的位置(书上的代码有问题，不是使用移动的增量来更新的，会出现手指与Button的位置不对应)。</p>
+<p>LayoutParams另外一个重要的参数就是 type，总共有 type:</p>
+<ul>
+<li>Application windows(1~99) 普通应用程序对应的Window，例如Activity</li>
+<li>Sub-Windows(1000~1999) 附加在Application windows上，例如Dialog</li>
+<li>System-Windows(2000~2999) 需要声明权限才能创建的Window，不需要依附在Application windows上面</li>
+</ul>
+<p>type也对应着Window的层次，层次大的会显示在最前端。</p>
+<p>当我们添加一个Window的时候，系统会给我们带上 token 这个参数，以表明我们添加的是哪一种Window，并且是否合法，如果没有会被认为是一个System-Windows,需要添加权限。</p>
+<blockquote>
+<p>Identifier for this window. This will usually be filled in for you.</p>
+</blockquote>
+<p>关于Type的一些tip可以参考这个:<a target="_blank" rel="noopener" href="http://liaohuqiu.net/cn/posts/android-windows-manager/">Android 悬浮窗的小结</a>。</p>
+<h4 id="Window的内部机制"><a href="#Window的内部机制" class="headerlink" title="Window的内部机制"></a>Window的内部机制</h4><p>Window是一个抽象的概念，它是以View的形式存在的。我们一般操作Window都是使用 ViewManager 提供的三个接口来实现:</p>
+<pre><code class="java">public interface ViewManager
+&#123;
+    public void addView(View view, ViewGroup.LayoutParams params);
+    public void updateViewLayout(View view, ViewGroup.LayoutParams params);
+    public void removeView(View view);
+&#125;
+</code></pre>
+<p>Window添加的过程,WindowManager的真正实现类是WindowManagerImpl:</p>
+<pre><code class="java">public final class WindowManagerImpl implements WindowManager &#123;
+    //是一个单例，真正执行操作的是WindowManagerGlobal
+    private final WindowManagerGlobal mGlobal = WindowManagerGlobal.getInstance();
+    @Override
+    public void addView(@NonNull View view, @NonNull ViewGroup.LayoutParams params) &#123;
+        //检查参数,并给LayoutParams添加默认的token
+        applyDefaultToken(params);
+        mGlobal.addView(view, params, mDisplay, mParentWindow);
+    &#125;
+&#125;
+</code></pre>
+<pre><code class="java">public final class WindowManagerGlobal &#123;
+    //用于记录添加Window的相关参数
+    private final ArrayList&lt;View&gt; mViews = new ArrayList&lt;View&gt;();
+    private final ArrayList&lt;ViewRootImpl&gt; mRoots = new ArrayList&lt;ViewRootImpl&gt;();
+    private final ArrayList&lt;WindowManager.LayoutParams&gt; mParams = new ArrayList&lt;WindowManager.LayoutParams&gt;();
+    private final ArraySet&lt;View&gt; mDyingViews = new ArraySet&lt;View&gt;();
+
+    public void addView(View view, ViewGroup.LayoutParams params,
+            Display display, Window parentWindow) &#123; 
+        //前面检查参数，调整params的值...
+        ViewRootImpl root;
+        View panelParentView = null;
+
+        synchronized (mLock) &#123;
+            //...
+            // If this is a panel window, then find the window it is being
+            // attached to for future reference.
+            if (wparams.type &gt;= WindowManager.LayoutParams.FIRST_SUB_WINDOW &amp;&amp;
+                    wparams.type &lt;= WindowManager.LayoutParams.LAST_SUB_WINDOW) &#123;
+                final int count = mViews.size();
+                for (int i = 0; i &lt; count; i++) &#123;
+                    if (mRoots.get(i).mWindow.asBinder() == wparams.token) &#123;
+                        panelParentView = mViews.get(i);
+                    &#125;
+                &#125;
+            &#125;
+
+            root = new ViewRootImpl(view.getContext(), display);
+
+            view.setLayoutParams(wparams);
+
+            mViews.add(view);
+            mRoots.add(root);
+            mParams.add(wparams);
+        &#125;
+
+        // do this last because it fires off messages to start doing things
+        try &#123;
+            root.setView(view, wparams, panelParentView);
+        &#125; catch (RuntimeException e) &#123;
+            // BadTokenException or InvalidDisplayException, clean up.
+            synchronized (mLock) &#123;
+                final int index = findViewLocked(view, false);
+                if (index &gt;= 0) &#123;
+                    removeViewLocked(index, true);
+                &#125;
+            &#125;
+            throw e;
+        &#125;
+    &#125;
+
+&#125;
+</code></pre>
+<p>从上面的代码可以看的出来添加Window的操作实际是由 ViewRootImpl 来完成的:</p>
+<pre><code class="java">//源代码实在太多而且很难看懂，以后用到再深究...通过mWindowSession来添加
+mWindowSession.addToDisplay(mWindow, mSeq, mWindowAttributes,
+                            getHostVisibility(), mDisplay.getDisplayId(),
+                            mAttachInfo.mContentInsets, mAttachInfo.mStableInsets,
+                            mAttachInfo.mOutsets, mInputChannel);
+
+</code></pre>
+<p>最终是通过Binder机制，向WindowManagerService发起一次IPC调用来添加Window。</p>
+<p>同理删除与更新也是通过Binder。</p>
+<h4 id="Window的创建过程"><a href="#Window的创建过程" class="headerlink" title="Window的创建过程"></a>Window的创建过程</h4><p>有视图(Activity,Dialog,Toast,PopUpWindow)的地方就有Window。</p>
+<ul>
+<li>Activity的Window创建过程<br>Activity创建过程，会通过attach方法，创建Window并与Window通过成员变量的方式关联，然后设置Window的Callback，例如<br>onAttachedToWindow,onDetachedFromWindow,dispatchTouchEvent</li>
+</ul>
+<pre><code class="java">final void attach(Context context, ActivityThread aThread,
+        Instrumentation instr, IBinder token, int ident,
+        Application application, Intent intent, ActivityInfo info,
+        CharSequence title, Activity parent, String id,
+        NonConfigurationInstances lastNonConfigurationInstances,
+        Configuration config, String referrer, IVoiceInteractor voiceInteractor) &#123;
+    //...
+    mWindow = new PhoneWindow(this);
+    mWindow.setCallback(this);
+    mWindow.setOnWindowDismissedCallback(this);
+    mWindow.getLayoutInflater().setPrivateFactory(this);
+    if (info.softInputMode != WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED) &#123;
+        mWindow.setSoftInputMode(info.softInputMode);
+    &#125;
+    if (info.uiOptions != 0) &#123;
+        mWindow.setUiOptions(info.uiOptions);
+    &#125;
+    mWindow.setWindowManager(
+            (WindowManager)context.getSystemService(Context.WINDOW_SERVICE),
+            mToken, mComponent.flattenToString(),
+            (info.flags &amp; ActivityInfo.FLAG_HARDWARE_ACCELERATED) != 0);
+    if (mParent != null) &#123;
+        mWindow.setContainer(mParent.getWindow());
+    &#125;
+    mWindowManager = mWindow.getWindowManager();    
+    //...
+&#125;
+</code></pre>
+<p>Window是一个抽象类，目前Android只提供了一种Window的实现，那就是 PhoneWindow。</p>
+<p>之后我们的视图就是通过setContentView来把我们的View附加到Window上面的:</p>
+<pre><code class="java">public void setContentView(@LayoutRes int layoutResID) &#123;
+    //这个Window就是刚才的那个PhoneWindow
+    getWindow().setContentView(layoutResID);
+    initWindowDecorActionBar();
+&#125;
+
+//PhoneWindow.java
+@Override
+public void setContentView(int layoutResID) &#123;
+    //...
+    installDecor();
+    //...
+    mLayoutInflater.inflate(layoutResID, mContentParent);
+    //...
+    final Callback cb = getCallback();
+    if (cb != null &amp;&amp; !isDestroyed()) &#123;
+        cb.onContentChanged();
+    &#125;
+&#125;
+
+private void installDecor() &#123;
+        //...
+        if (mDecor == null) &#123;
+            mDecor = generateDecor();
+        &#125;
+        if (mContentParent == null) &#123;
+            mContentParent = generateLayout(mDecor);
+        &#125;
+        //...
+&#125;
+
+protected DecorView generateDecor() &#123;
+    return new DecorView(getContext(), -1);
+&#125;
+</code></pre>
+<p>就是创建一个DectorView(是一个FrameLayout,里面一般包含标题栏和内容栏，具体和主题有关系，例如NoTitle就是没有标题栏内容栏id为android.R.id.content),这个View就是mContentParent，然后会调用inflate把我们的View加载到mContentParent上，最后就会回调onContentChanged(),即Activity里面的内容已经发生改变。<br>到这个时候，DectorView还不能还没有添加到Window中，还需要调用ActivityThread#handleResumeActivity，里面会回调Activity#onResume，接着调用Activity#makeVisible()，这时候DectorView才能可:</p>
+<pre><code class="java">void makeVisible() &#123;
+    if (!mWindowAdded) &#123;
+        ViewManager wm = getWindowManager();
+        wm.addView(mDecor, getWindow().getAttributes());
+        mWindowAdded = true;
+    &#125;
+    mDecor.setVisibility(View.VISIBLE);
+&#125;
+</code></pre>
+<ul>
+<li>Dialog的Window创建过程</li>
+</ul>
+<pre><code class="java">//Dialog.java
+Dialog(@NonNull Context context, @StyleRes int themeResId, boolean createContextThemeWrapper) &#123;
+    if (createContextThemeWrapper) &#123;
+        if (themeResId == 0) &#123;
+            final TypedValue outValue = new TypedValue();
+            context.getTheme().resolveAttribute(R.attr.dialogTheme, outValue, true);
+            themeResId = outValue.resourceId;
+        &#125;
+        mContext = new ContextThemeWrapper(context, themeResId);
+    &#125; else &#123;
+        mContext = context;
+    &#125;
+    mWindowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+    final Window w = new PhoneWindow(mContext);
+    mWindow = w;
+    w.setCallback(this);
+    w.setOnWindowDismissedCallback(this);
+    w.setWindowManager(mWindowManager, null, null);
+    w.setGravity(Gravity.CENTER);
+    mListenersHandler = new ListenersHandler(this);
+&#125;
+
+public void setContentView(@LayoutRes int layoutResID) &#123;
+    mWindow.setContentView(layoutResID);
+&#125;
+
+public void show() &#123;
+      //...
+      mDecor = mWindow.getDecorView();
+      //...
+      mWindowManager.addView(mDecor, l);
+      mShowing = true;
+      //...
+&#125;
+</code></pre>
+<p>可以看见和Activity的Window创建类似，创建一个PhoneWindow与Dialog建立关联并设置Window.Callback，还有创建ListenersHandler,用于发送<br>Dialog#show,cancel,dismiss的回调消息。<br>然后通过setContentView设置我们的内容，调用show方法，把DectorView添加到Window里面。<br>另外，创建Dialog使用ApplicationContext会抛异常(里面没有包含Window的Context，例如Service，因为Dilog是做为Sub-Windows附加在Application-Windows上面的)，因为里面没有应用的token(就是WindowManager.LayoutParams.token参数)，一般使用Activity里面的Context，如果有使用ApplicationContext的需求，就需要改变Window的type，并声明权限:</p>
+<pre><code class="java">dialog.getWindow().setType(LayoutParams.TYPE_SYSTEM_ERROR);
+</code></pre>
+<pre><code class="xml">&lt;uses-permission android:name=&quot;android.permission.SYSTEM_ALERT_WINDOW&quot;&gt;
+</code></pre>
+<ul>
+<li>Toast的Window创建过程</li>
+</ul>
+<p>Toast属于系统Window，内部视图可以是系统的默认样式，另一种则是通过setView来指定。通过show()和cancel()来实现Toast的显示和隐藏，并且都是IPC过程调用。远端的服务就是NotificationManagerService。</p>
+<p>Toast.makeToast里面加载默认的View，创建TN，这是一个Binder对象用于服务端回调</p>
+<pre><code>public Toast(Context context) &#123;
+    //...
+    mTN = new TN();
+    //...
+&#125;
+</code></pre><p>获取一个远端的Binder对象(Proxy),发起IPC调用enqueueToast，TN用于服务端回调客户端</p>
+<pre><code>public void show() &#123;
+    //...
+    INotificationManager service = getService();
+    String pkg = mContext.getOpPackageName();
+    TN tn = mTN;
+    tn.mNextView = mNextView;
+    try &#123;
+        service.enqueueToast(pkg, tn, mDuration);
+    &#125; catch (RemoteException e) &#123;
+        // Empty
+    &#125;
+&#125;
+
+static private INotificationManager getService() &#123;
+    if (sService != null) &#123;
+        return sService;
+    &#125;
+    sService = INotificationManager.Stub.asInterface(ServiceManager.getService(&quot;notification&quot;));
+    return sService;
+&#125;
+</code></pre><p>服务端NotifiactionManagerService，执行操作<br>首先会遍历ToastQueue大小是否超过了50，如果是那么就不再往队列里面添加，防止DOS<br>然后执行showNextToastLocked</p>
+<pre><code>public void enqueueToast(String pkg, ITransientNotification callback, int duration) &#123;
+    //注意这个锁
+    synchronized (mToastQueue) &#123;
+            ToastRecord record;
+            int index = indexOfToastLocked(pkg, callback);
+            //如果已经存在就不会添加，只是更新duration
+            if (index &gt;= 0) &#123;
+                record = mToastQueue.get(index);
+                record.update(duration);
+            &#125; else &#123;
+                if (!isSystemToast) &#123;//非系统应用
+                    int count = 0;
+                    final int N = mToastQueue.size();
+                    for (int i=0; i&lt;N; i++) &#123;
+                         final ToastRecord r = mToastQueue.get(i);
+                         if (r.pkg.equals(pkg)) &#123;
+                             count++;
+                             //每一个应用的ToastQueue只能存50个Toast
+                             //所以遍历防止DOS
+                             if (count &gt;= MAX_PACKAGE_NOTIFICATIONS) &#123;
+                                 return;
+                             &#125;
+                         &#125;
+                    &#125;
+                &#125;
+                record = new ToastRecord(callingPid, pkg, callback, duration);
+                mToastQueue.add(record);
+                index = mToastQueue.size() - 1;
+                //...
+            &#125;
+            if (index == 0) &#123;
+                showNextToastLocked();
+            &#125;
+        &#125;
+&#125;
+</code></pre><p>获取客户端的TN回调show()方法，mHandler随后post一个Runnable对象，执行handleShow，往Window里面添加View</p>
+<pre><code>void showNextToastLocked() &#123;
+    ToastRecord record = mToastQueue.get(0);
+    while (record != null) &#123;
+            //...
+            //回调客户端里面的TN
+            record.callback.show();
+            scheduleTimeoutLocked(record);
+            return;
+            //...
+    &#125;
+&#125;
+
+private static class TN extends ITransientNotification.Stub &#123;
+    public void show() &#123;
+        mHandler.post(mShow);
+    &#125;
+
+
+    final Runnable mShow = new Runnable() &#123;
+            @Override
+            public void run() &#123;
+                handleShow();
+            &#125;
+    &#125;;
+
+    public void handleShow() &#123;
+        if (mView != mNextView) &#123;
+            // remove the old view if necessary
+            handleHide();
+            mView = mNextView;
+            //...
+            mWM = (WindowManager)context.getSystemService(Context.WINDOW_SERVICE);
+            mWM.addView(mView, mParams);
+            //...
+        &#125;
+    &#125;
+&#125;
+</code></pre><p>根据Toast的duration，想Handler发送一个delay消息，用于控制Toast的显示时长</p>
+<pre><code>private void scheduleTimeoutLocked(ToastRecord r)&#123;
+    mHandler.removeCallbacksAndMessages(r);
+    Message m = Message.obtain(mHandler, MESSAGE_TIMEOUT, r);
+    long delay = r.duration == Toast.LENGTH_LONG ? LONG_DELAY : SHORT_DELAY;
+    mHandler.sendMessageDelayed(m, delay);
+&#125;
+
+private final class WorkerHandler extends Handler &#123;
+        @Override
+        public void handleMessage(Message msg)
+        &#123;
+            switch (msg.what)
+            &#123;
+                case MESSAGE_TIMEOUT:
+                    handleTimeout((ToastRecord)msg.obj);
+                    break;
+            &#125;
+        &#125;
+&#125;
+</code></pre><p>取出显示的Toast，然后回调客户端的TN#hide，完成隐藏的操作，如果队列里面还有其他的Toast，那个继续调用showNextToastLocked，显示下一个Toast</p>
+<pre><code>private void handleTimeout(ToastRecord record) &#123;
+    synchronized (mToastQueue) &#123;
+        int index = indexOfToastLocked(record.pkg, record.callback);
+        if (index &gt;= 0) &#123;
+            cancelToastLocked(index);
+        &#125;
+    &#125;
+&#125;
+
+void cancelToastLocked(int index) &#123;
+    ToastRecord record = mToastQueue.get(index);
+    record.callback.hide();
+    mToastQueue.remove(index);
+    if (mToastQueue.size() &gt; 0) &#123;
+        // Show the next one. If the callback fails, this will remove
+        // it from the list, so don&#39;t assume that the list hasn&#39;t changed
+        // after this point.
+        showNextToastLocked();
+    &#125;
+&#125;
+</code></pre><p>执行TN里面的回调，从Window去掉我们添加的View</p>
+<pre><code>private static class TN extends ITransientNotification.Stub &#123;
+    final Runnable mHide = new Runnable() &#123;
+        @Override
+        public void run() &#123;
+            handleHide();
+            //...
+        &#125;
+    &#125;;
+    @Override
+    public void hide() &#123;
+        if (localLOGV) Log.v(TAG, &quot;HIDE: &quot; + this);
+        mHandler.post(mHide);
+    &#125;
+
+
+public void handleHide() &#123;
+    if (mView != null) &#123;
+        // note: checking parent() just to make sure the view has
+        // been added...  i have seen cases where we get here when
+        // the view isn&#39;t yet added, so let&#39;s try not to crash.
+        if (mView.getParent() != null) &#123;
+            mWM.removeView(mView);
+        &#125;
+        mView = null;
+    &#125;
+&#125;
+</code></pre><p>这里需要注意的一点是，TN是在Binder的线程池里面执行的，所以需要使用Handler向我们执行Toast#show或者Toast#cancel的线程发送请求，执行Runnable，如果我们是在子线程里面执行的show操作，那么将会抛异常，因为默认子线程是没有Looper对象的。<br>我们自己可以新建一个Looper,但是更推荐使用HandlerThread来处理。</p>
+<pre><code>Looper.prepare();
+Looper.loop();
+</code></pre>
+
+
+
+</body>
+</html>

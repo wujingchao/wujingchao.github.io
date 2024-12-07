@@ -1,0 +1,117 @@
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    
+<script src="/js/less.min.js"></script>
+
+    
+    
+<link rel="stylesheet" href="/css/main.css">
+
+    
+<link rel="stylesheet" href="/prettify/tomorrow.css">
+
+    
+<script src="/js/jquery-2.1.4.min.js"></script>
+
+    
+<script src="/js/raphael-min.js"></script>
+
+    
+<script src="/js/underscore-min.js"></script>
+
+    
+<script src="/js/sequence-diagram-min.js"></script>
+
+    
+<script src="/js/flowchart-latest.js"></script>
+
+    
+<script src="/prettify/prettify.js"></script>
+
+    
+<script src="/js/common.js"></script>
+
+    
+<script src="/js/gitment.browser.js"></script>
+
+    
+<link rel="stylesheet" href="/css/default.css">
+
+    
+<link rel="stylesheet" href="/lib/fancybox/dist/jquery.fancybox.css">
+
+
+    
+<script src="/lib/fancybox/dist/jquery.fancybox.js"></script>
+
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    
+    
+    <script>
+        (function (i, s, o, g, r, a, m) {
+            i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+                (i[r].q = i[r].q || []).push(arguments)
+            }, i[r].l = 1 * new Date(); a = s.createElement(o),
+                m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
+        })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+        ga('create', 'UA-71897482-1', 'auto');
+        ga('send', 'pageview');
+    </script>
+    
+    
+    <title>快速排序的另一种简单写法</title>
+    <meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=0.8, user-scalable=no">
+<meta name="generator" content="Hexo 6.3.0"></head>
+<body>
+
+<h3 id="快速排序的另一种简单写法"><a href="#快速排序的另一种简单写法" class="headerlink" title="快速排序的另一种简单写法"></a>快速排序的另一种简单写法</h3><p>最近在看<a target="_blank" rel="noopener" href="https://book.douban.com/subject/1139336/">TCPL</a>，第四章的函数与程序结构里面有一个快速排序的例子，并且几句话就把快速排序总结了，非常精炼。快速排序利用的是分治的思想(Divide Conquer)，理解了分治，就能理解快排。这里记录一下，并且讲解一下程序的原理。</p>
+<blockquote>
+<p>对于一个给定的数组，从中选择一个元素，以该元素为界将其余元素划分为两个子集，一个子集中的所有元素都小于该元素，另一个子集中的元素都大于或等于该元素。对这两个子集递归执行这一过程当子集中的元素小于2时，这个子集就不需要再次排序，终止递归。</p>
+</blockquote>
+<pre><code>static void sortRecursively(int[] arr, int left, int right) &#123;
+    if (left &gt;= right) &#123;
+        return;
+    &#125;
+    int pivot = (left + right)/2;
+    swap(arr, left, pivot);
+    int last = left;
+    for (int i = left + 1; i &lt;= right; i++) &#123;
+        if (arr[left] &gt; arr[i]) &#123;
+            swap(arr, ++last, i);
+        &#125;
+    &#125;
+    swap(arr, left, last);
+    sortRecursively(arr, left, last - 1);
+    sortRecursively(arr, last + 1, right);
+&#125;
+
+</code></pre><p>其中交换数组元素的代码被抽取出来：</p>
+<pre><code>static void swap(int[] arr, int k, int j) &#123;
+    int tmp = arr[k];
+    arr[k] = arr[j];
+    arr[j] = tmp;
+&#125;
+</code></pre><p>首先选取枢纽点，这里选取的是元素中心位置，然后交换到最左侧的left，这样做的目的便于后面双指针的移动。</p>
+<p><img src="/assets/quick_sort1.png?imageView2/2/w/400/h/200/q/100" alt="quick_sort1"></p>
+<p>交换后并定义last指针指向left位置，这里的last指针表示last之前并且包括last的元素都小于枢纽元素pivot。</p>
+<p><img src="/assets/quick_sort3.png?imageView2/2/w/400/h/230/q/100" alt="quick_sort1"></p>
+<p>之后便开始通过对比枢纽元素与枢纽元素后面的元素，将小于枢纽元素的元素交换到前面，并移动last指针，由于24与67都比23大，所以last就保持不变，也没有任何交换的操作。</p>
+<p><img src="/assets/quick_sort4.png?imageView2/2/w/400/h/210/q/100" alt="quick_sort1"></p>
+<p>当遇到i移动到3的时候，便交换24与3，并且移动last指针指向3。</p>
+<p><img src="/assets/quick_sort5.png?imageView2/2/w/400/h/200/q/100" alt="quick_sort1"></p>
+<p>之后继续移动i，直到最后一个元素。这样，last之前的元素都小于枢纽元素，last之后的元素都大于等于枢纽元素。</p>
+<p><img src="/assets/quick_sort6.png?imageView2/2/w/400/h/200/q/100" alt="quick_sort1"></p>
+<p><img src="/assets/quick_sort7.png?imageView2/2/w/400/h/230/q/100" alt="quick_sort1"></p>
+<p>然后再恢复划分的子集，让枢纽元素之前的子集和枢纽元素之后的子集分别递归调用排序，递归的终止条件就是子集只有一个元素的时候，这时子集当然是有序的。这样就完成了对整个数组的排序。</p>
+<p>对于快速排序排序还有一些复杂的细节，比如枢纽元素的选择等。关于时间复杂度与空间复杂度的分析可以参考<a target="_blank" rel="noopener" href="https://zh.wikipedia.org/wiki/快速排序">维基百科</a>。</p>
+
+
+
+
+</body>
+</html>

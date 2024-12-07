@@ -1,0 +1,210 @@
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    
+<script src="/js/less.min.js"></script>
+
+    
+    
+<link rel="stylesheet" href="/css/main.css">
+
+    
+<link rel="stylesheet" href="/prettify/tomorrow.css">
+
+    
+<script src="/js/jquery-2.1.4.min.js"></script>
+
+    
+<script src="/js/raphael-min.js"></script>
+
+    
+<script src="/js/underscore-min.js"></script>
+
+    
+<script src="/js/sequence-diagram-min.js"></script>
+
+    
+<script src="/js/flowchart-latest.js"></script>
+
+    
+<script src="/prettify/prettify.js"></script>
+
+    
+<script src="/js/common.js"></script>
+
+    
+<script src="/js/gitment.browser.js"></script>
+
+    
+<link rel="stylesheet" href="/css/default.css">
+
+    
+<link rel="stylesheet" href="/lib/fancybox/dist/jquery.fancybox.css">
+
+
+    
+<script src="/lib/fancybox/dist/jquery.fancybox.js"></script>
+
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    
+    
+    <script>
+        (function (i, s, o, g, r, a, m) {
+            i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+                (i[r].q = i[r].q || []).push(arguments)
+            }, i[r].l = 1 * new Date(); a = s.createElement(o),
+                m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
+        })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+        ga('create', 'UA-71897482-1', 'auto');
+        ga('send', 'pageview');
+    </script>
+    
+    
+    <title>详解Socket编程---连接与断开</title>
+    <meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=0.8, user-scalable=no">
+<meta name="generator" content="Hexo 6.3.0"></head>
+<body>
+
+<h3 id="详解Socket编程—连接与断开"><a href="#详解Socket编程—连接与断开" class="headerlink" title="详解Socket编程—连接与断开"></a>详解Socket编程—连接与断开</h3><p>由于Java的Socket接口简单易用得多，为了简单起见，都是使用Java做示例，但是它和Unix C的接口都是类似，Java接口只是使用JNI对底层接口的一个封装。</p>
+<h4 id="ServerSocket监听端口"><a href="#ServerSocket监听端口" class="headerlink" title="ServerSocket监听端口"></a>ServerSocket监听端口</h4><p>Socket编程使用的都是C/S的模式，先从ServerSocket说起，先来看下ServerSocket最多参数的构造方法：</p>
+<pre><code>public ServerSocket(int port, int backlog, InetAddress bindAddr) throws IOException
+</code></pre><ul>
+<li>port: 第一个参数port就是进程要监听的端口。在TCP协议中，端口又被称为进程的地址，用于OS向上层分发数据的标识。<br>向某个没有监听的端口发送，数据，建立连接会受到TCP的RST报文，这种情况常常出现在对端的进程crash之后或者进程压根就没有监听这个端口，而你又去尝试连接或者发送数据。</li>
+</ul>
+<p><img src="/assets/tcp_connect_rst.png" alt="tcp_connect_rst"></p>
+<p>对应就会抛出IO异常:</p>
+<pre><code>java.net.ConnectException: Connection refused (Connection refused)
+    at java.net.PlainSocketImpl.socketConnect(Native Method)
+    at java.net.AbstractPlainSocketImpl.doConnect(AbstractPlainSocketImpl.java:350)
+    at java.net.AbstractPlainSocketImpl.connectToAddress(AbstractPlainSocketImpl.java:206)
+    at java.net.AbstractPlainSocketImpl.connect(AbstractPlainSocketImpl.java:188)
+    at java.net.SocksSocketImpl.connect(SocksSocketImpl.java:392)
+    at java.net.Socket.connect(Socket.java:589)
+</code></pre><ul>
+<li>backlog：中文翻译叫积压值，不是很好理解。对应的注释：</li>
+</ul>
+<pre><code>requested maximum length of the queue of incoming connections
+</code></pre><p>当我们执行了监听端口的操作，就需要调用accpet方法去接收客户端TCP连接的请求，当客户端发起三次握手建立请求，我们就会accpet到一个Socket，就可以使用这个Socekt的输入输出流与对端通信。这里要强调一点，accept到的连接一定是完成了一次三次握手。如果我们处理接收Socket的速度较慢，例如使用单线程去处理，那么就会使建立完三次握手的连接在OS内部队列积压着，这个backlog就是限制积压这一类Socket的个数，如果我们不指定，默认就是50。</p>
+<p>下面来做实验观察一下超过backlog大小会出现什么情况：</p>
+<p>Server端代码，backlog的值为2：</p>
+<pre><code>try (ServerSocket serverSocket = new ServerSocket(10086, 2)) &#123;
+    Socket socket = serverSocket.accept();
+    System.out.println(&quot;Accept New Socket&quot;);
+    TimeUnit.MINUTES.sleep(10);
+&#125;
+</code></pre><p>Client代码，设置了一个连接超时时间：</p>
+<pre><code>for (int i = 0; i &lt; 5; i++) &#123;
+    Socket socket = new Socket();
+    try &#123;
+        socket.connect(new InetSocketAddress(&quot;192.168.1.7&quot;, 10086), 2_000);
+        System.out.println(&quot;Connect Success:&quot; + i);
+    &#125; catch (IOException e) &#123;
+        e.printStackTrace();
+    &#125;
+&#125;
+</code></pre><p>按照前面的理解，客户端应该能够连接成功三次，通过打印的日志确实如此，当连接第四个Socekt的时候会出现超时：</p>
+<pre><code>07-22 22:27:56.973 7193-7562/com.wujingchao.android.demo I/System.out: Connect Success:0
+07-22 22:27:56.983 7193-7562/com.wujingchao.android.demo I/System.out: Connect Success:1
+07-22 22:27:56.983 7193-7562/com.wujingchao.android.demo I/System.out: Connect Success:2
+07-22 22:29:00.181 7193-7562/com.wujingchao.android.demo W/System.err: java.net.ConnectException: failed to connect to /192.168.1.7 (port 10086): connect failed: ETIMEDOUT (Connection timed out)
+</code></pre><p>抓取客户端的TCP报文：<br><img src="/assets/tcp_connect_backlog.png" alt="tcp_connect_backlog"></p>
+<p>报文 1 ~ 3， 4 ~ 7， 8 ~ 11就是前三次连接成功的报文(另外两个窗口大小更新的报文先不去理会)，从12个报文开始，客户端的SYN握手请求，服务端就不在理会了，再下来红字黑底的报文触发了客户端的超时重传。这里服务端的实现就是大于backlog的时候就丢弃SYN握手请求。</p>
+<p>这里有一点需要注意，不同的OS平台对backlog的实现不太一样，上面测试的Server端是在Mac OS-HotSpot的环境下测试的，但是如果在Ubuntu-OpenJDK上测试，会得到不一样的结果，经过在Ubuntu上测试，服务端貌似没有对backlog有限制，连接了一百多个socket都还能连接。</p>
+<p>很早之前OpenJDK上的issue中就讨论过这个问题：</p>
+<p><a target="_blank" rel="noopener" href="https://bugs.openjdk.java.net/browse/JDK-6258215">Num of backlog in ServerSocket(int, int) should be mentioned more explicitly in API document</a></p>
+<blockquote>
+<p>However, even if we specify preferable number as the number of backlog ,<br>actual number depends on underlying Opreationg System.<br>The documnet should say the below(just example).<br> “Parameters:<br>    port - the specified port, or 0 to use any free port.<br>    backlog - Request of size of the backlog is just passed to underlying OS.<br>              How the OS performs with the request depends on each OS.”</p>
+</blockquote>
+<p>下面接着看最后一个参数：</p>
+<ul>
+<li>InetAddress： 表示监听IP层协议的ip地址，这是一个抽象类，有两个子类Inet4Address和Inet6Address，分别代码ipv4和ipv6的地址，我们不能实例化这两个类的，一般情况下我们使用InetAddress的静态方法getByName(String host)获得实例，API会根据我们传入的地址类型实例化出对应的ipv4或者ipv6地址对象。如果我们传入为空表示监听所有的网卡接口。<br>可以通过NetworkInterface.getNetworkInterfaces()方法获取系统上所有的网卡接口。</li>
+</ul>
+<p>在TCP/IP协议中，通过5个元素可以确定一条连接:</p>
+<table>
+<thead>
+<tr>
+<th>源端IP地址</th>
+<th>源端Port端口</th>
+<th>目的端IP地址</th>
+<th>目的端Port端口</th>
+<th>协议类型</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>所以可以有以下结论：<br>1.我们可以同时监听同一个端口的不同ip地址，在ip地址相同的情况还可以监听不同的协议类型(TCP or UDP)<br>2.客户端在IP地址相同的情况下可以使用不同的端口接入(同一个节点)，端口相同的情况不同的IP可以接入(不同的节点)<br>3.当服务端accept到一个Socket可以通过getLocalSocketAddress()和getRemoteSocketAddress得到本地和远端的ip/port信息<br>4.如果我们要过滤客户端的地址或者端口，从协议上来说，服务端应该是可以限制客户端的IP或者port，但是API并没有提供这样的接口给我们使用，只能accept到Socket后再根据3中所述的方法得到远端的ip和port进行过滤。</p>
+<p>通过这种方式，可以限制接入IP报文中目的地址的报文，假如我们有多个网卡即多个IP地址，通过监听特定的网卡即可实现，如果我们只监听127.0.0.1的回环地址，那么就只有本地的进程能够接入。</p>
+<p>下面的示例代码监听了ipv4,ipv6,通配符方式的地址。如果我们监听了特定的网卡，那么就会优先接入该网卡的ip，不匹配就会接入到通配符的地址，通配符地址监听了系统上的所有网卡，包括ipv4,ipv6。</p>
+<pre><code>ServerSocket serverSocket = new ServerSocket(10086, 2, InetAddress.getByName(&quot;::1&quot;));
+ServerSocket serverSocket2 = new ServerSocket(10086, 2, InetAddress.getByName(&quot;127.0.0.1&quot;));
+ServerSocket serverSocket3 = new ServerSocket(10086, 2, null);
+</code></pre><p><img src="/assets/tcp_connect_listen.png" alt="tcp_connect_listen"></p>
+<p>通过上面的构造方法创建ServerSocket如果成功，就是一个绑定状态的socket，调用isBound()方法返回的就是true，另外其他的几个有参构造方法都是基于这个构造方法，通过netstat命令就可以直接看到效果。<br>API还提供了另外一种无参创建ServerSocket的方法，支持延迟绑定端口：</p>
+<pre><code>public ServerSocket() throws IOException
+</code></pre><p>提供这个接口是有原因的，为了支持端口重用的选项 SO_REUSEADDR （这个选项下面讲到客户端Socket的时候再详细说明这个选项），要让ServerSocket支持这个选项，必须先设置，然后才能执行绑定操作，否则就是一个未定义的行为：</p>
+<blockquote>
+<p>The behaviour when SO_REUSEADDR is enabled or disabled after a socket is bound (See isBound()) is not defined.</p>
+</blockquote>
+<p>无参构造方法创建的实例代码:</p>
+<pre><code>ServerSocket serverSocket = new ServerSocket();
+serverSocket.setReuseAddress(true);
+serverSocket.bind(new InetSocketAddress(InetAddress.getByName(&quot;127.0.0.1&quot;), 10086));
+</code></pre><h4 id="客户端Socket连接"><a href="#客户端Socket连接" class="headerlink" title="客户端Socket连接"></a>客户端Socket连接</h4><p>客户端创建Socket的方式比较简单：</p>
+<pre><code>Socket socket = new Socket();//创建一个 unbound状态的Socket
+socket.connect(new InetSocketAddress(&quot;192.168.1.7&quot;, 10086), 0);//第二个参数为超时的时间，默认情况下为0，表示无限等待
+</code></pre><p>采用无参的方式创建Socket，OS为自动给我们分配一个合适的端口和网卡接口去连接目的端，网卡接口是通过主机的路由表确定的。</p>
+<p>另外一个构造方法在创建Socket的时候，可以指定源端ip和port，目的端的ip和port，Socket对象创建成功后，得到的Socket就已经是三次握手成功过了，可以进行数据传输。</p>
+<pre><code>public Socket(InetAddress address, int port, InetAddress localAddr,
+                  int localPort) throws IOException
+</code></pre><p>调用方法后抓包，就是三次握手的过程，协商MSS，以及是否支持[SACK（Selective ACK）)]等(<a target="_blank" rel="noopener" href="https://blog.csdn.net/Mary19920410/article/details/72820477">https://blog.csdn.net/Mary19920410/article/details/72820477</a>)</p>
+<p><img src="/assets/tcp_connect_handshake.png" alt="tcp_connect_handshake"></p>
+<p>三次握手是最小的代价确认对方的网络环境是否OK，是否能进行TCP通信，第一二次客户端为了确定服务端是否OK，第二三次是服务端确定客户端的环境是否OK。</p>
+<h4 id="Socket断开连接"><a href="#Socket断开连接" class="headerlink" title="Socket断开连接"></a>Socket断开连接</h4><p><img src="/assets/tcp_connect_4dis.png?imageView2/2/w/550/h/420/q/100" alt="tcp_connect_4dis"></p>
+<p>涉及Socket断开连接的方法有:</p>
+<ul>
+<li>Socket.shutdownInput();</li>
+<li>Socket.shutdownOutput();</li>
+<li>Socket.close();</li>
+<li>Socket.setLinger(boolean on, int linger);</li>
+</ul>
+<p>由于TCP的传输是双向传输，Socket提供了关闭输入流与输出流的方法，可以使连接处于半关闭的状态，只有两端都关闭了输出流，才是一个TCP连接的正常关闭状态。</p>
+<p>shutdownInput并不会发送TCP相关的断开连接报文，会导致的InputStream读到EOF(-1)，OS会继续接收报文，确认收到的数据并默默地丢弃。</p>
+<p>shutdownOutput会发送一个FIN报文给对端，表示主动关闭的这一方已经没有数据需要发送，然后对端对FIN报文进行确认，被动关闭端依旧可以继续发送数据，主动关闭的一方继续读取数据。</p>
+<p>Server端代码（主动关闭）</p>
+<pre><code>try (ServerSocket serverSocket = new ServerSocket(10086, 2)) &#123;
+    Socket socket = serverSocket.accept();
+    socket.shutdownOutput();//FIN
+    InputStream is = socket.getInputStream();
+    while (is.read() != -1);//continue read, 此时socket处于FIN_WAIT2
+    TimeUnit.MINUTES.sleep(10);
+&#125;
+</code></pre><p>Client端代码（被动关闭）</p>
+<pre><code>Socket socket = new Socket();
+socket.connect(new InetSocketAddress(&quot;212.64.20.XX&quot;, 10086));
+if (socket.getInputStream().read() == -1) &#123;
+    System.out.println(&quot;read EOF&quot;);//被动关闭，读到EOF， 此时socket处于LAST_ACK的状态
+&#125;
+for (int i = 0; i &lt; 5; i++) &#123;
+    socket.getOutputStream().write(&#39;A&#39;);//依旧可以写数据
+&#125;
+</code></pre><p>对于的TCP报文：</p>
+<p><img src="/assets/tcp_connect_half_close.png" alt="tcp_connect_half_close"></p>
+<p>Socket.close() 操作同时将InputStream与OutputStream都关闭，并释放OS分配的资源。<br>由于</p>
+<p>….</p>
+<p>(2021年01月09日更新)一直懒得写完….不过最近看到一本书很好地描述的Java Socket的网络编程，要是以前早点看到这本书就好了，少走一些弯路，不过《TCT/IP卷一》也是必不可少的：</p>
+<p>&lt;&lt;TCP/IP Sockets in Java, Second Edition&gt;&gt;</p>
+<p><a target="_blank" rel="noopener" href="https://book.douban.com/subject/3616173/">https://book.douban.com/subject/3616173/</a></p>
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,377 @@
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    
+<script src="/js/less.min.js"></script>
+
+    
+    
+<link rel="stylesheet" href="/css/main.css">
+
+    
+<link rel="stylesheet" href="/prettify/tomorrow.css">
+
+    
+<script src="/js/jquery-2.1.4.min.js"></script>
+
+    
+<script src="/js/raphael-min.js"></script>
+
+    
+<script src="/js/underscore-min.js"></script>
+
+    
+<script src="/js/sequence-diagram-min.js"></script>
+
+    
+<script src="/js/flowchart-latest.js"></script>
+
+    
+<script src="/prettify/prettify.js"></script>
+
+    
+<script src="/js/common.js"></script>
+
+    
+<script src="/js/gitment.browser.js"></script>
+
+    
+<link rel="stylesheet" href="/css/default.css">
+
+    
+<link rel="stylesheet" href="/lib/fancybox/dist/jquery.fancybox.css">
+
+
+    
+<script src="/lib/fancybox/dist/jquery.fancybox.js"></script>
+
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    
+    
+    <script>
+        (function (i, s, o, g, r, a, m) {
+            i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+                (i[r].q = i[r].q || []).push(arguments)
+            }, i[r].l = 1 * new Date(); a = s.createElement(o),
+                m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
+        })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+        ga('create', 'UA-71897482-1', 'auto');
+        ga('send', 'pageview');
+    </script>
+    
+    
+    <title>读书笔记:View的工作原理</title>
+    <meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=0.8, user-scalable=no">
+<meta name="generator" content="Hexo 6.3.0"></head>
+<body>
+
+<h3 id="Android开发艺术探索读书笔记-View的工作原理"><a href="#Android开发艺术探索读书笔记-View的工作原理" class="headerlink" title="Android开发艺术探索读书笔记: View的工作原理"></a><a target="_blank" rel="noopener" href="http://www.amazon.cn/Android%E5%BC%80%E5%8F%91%E8%89%BA%E6%9C%AF%E6%8E%A2%E7%B4%A2-%E4%BB%BB%E7%8E%89%E5%88%9A/dp/B014HV1X3K/ref=sr_1_1?ie=UTF8&amp;qid=1451616304&amp;sr=8-1&amp;keywords=Android%E5%BC%80%E5%8F%91%E8%89%BA%E6%9C%AF%E6%8E%A2%E7%B4%A2">Android开发艺术探索</a>读书笔记: View的工作原理</h3><h4 id="ViewRoot和DectorView"><a href="#ViewRoot和DectorView" class="headerlink" title="ViewRoot和DectorView"></a>ViewRoot和DectorView</h4><p>ViewRoot与ViewRootImpl类实现的功能是一样的，DectorView和Windowmanger的桥梁，只是Android4.0以后改了名而已，可以看下图:</p>
+<p><img src="/assets/ViewRoot和ViewRootImpl关系.png" alt="ViewRoot和ViewRootImpl关系"></p>
+<blockquote>
+<p>The top of a view hierarchy, implementing the needed protocol between View and the WindowManager.</p>
+</blockquote>
+<p>当Activity创建完毕，DectorView会被添加到Window中并创建ViewRoot对象与DectorView建立关联。<br>View的三大流程都是通过ViewRoot来完成的:</p>
+ 
+<div class="diagram_flow">
+st=>start: Start
+e=>end: End
+op1=>operation: performTraversals
+op2=>operation: performMeasure
+sub21=>subroutine: measure
+sub22=>subroutine: onMeasure(遍历所有子View测量自己)
+
+op3=>operation: performLayout
+sub31=>subroutine: layout
+sub32=>subroutine: onLayout(遍历所有ViewGroup摆放自己子View)
+
+op4=>operation: performDraw
+sub41=>subroutine: draw
+sub42=>subroutine: onDraw(遍历所有子View绘制自己)
+
+
+st->op1->op2->sub21->sub22->op3->sub31->sub32->op4->sub41->sub42
+
+</div>
+
+<p>注:onLayout可以获取onMeasure测量好的值了 getMeasuredHeight/Width</p>
+<hr>
+<p>DectorView做为顶级View被添加到Window(PhoneWindow)中，measure,layout,draw都是从这里开始，继承于FrameLayout，会根据主题加载不同的layout（例如R.layout.screen_title），内容id为 android.R.id.content，我们通过Activity#setContentView就是把我们的layout填充到里面。可以通过findViewById(android.R.id.content)获取这个ViewGroup,再通过getChildAt(0)，就可以获得我们设置的内容了。</p>
+<h4 id="MeasureSpec-测量规格"><a href="#MeasureSpec-测量规格" class="headerlink" title="MeasureSpec 测量规格"></a>MeasureSpec 测量规格</h4><p>系统会将我们设置的View的LayoutParams和父容器施加的规则转换为对应的MesureSpec，根据这个来测量那个View的宽和高。<br>MeasureSpec 表示为一个int,高2位表示测量模式SpecMode,低30位表示某种测量模式的大小，节省内存开销，因为很多地方都要使用。通过代码里面的常量可以看得出来有三种测量模式，并且提供了 打包 和 解包 这两样数据的方法。</p>
+<pre><code class="java">public static class MeasureSpec &#123;
+    private static final int MODE_SHIFT = 30;
+
+    //父容器不对View有任何限制，要多大，有多大，系统内部使用，基本不用
+    public static final int UNSPECIFIED = 0 &lt;&lt; MODE_SHIFT;
+
+    //父容器已经测量出了View所需要的精确大小,View的大小就是Spec
+    //对应LayoutParams的具体数值和,match_parent
+    public static final int EXACTLY     = 1 &lt;&lt; MODE_SHIFT;
+
+    //父容器指定一个可用大小的SpecSize,View的大小不能超过
+    //对应LayoutParams的wrap_parent
+    public static final int AT_MOST     = 2 &lt;&lt; MODE_SHIFT;
+&#125;
+</code></pre>
+<h4 id="MeasureSpec与LayoutParams对应关系"><a href="#MeasureSpec与LayoutParams对应关系" class="headerlink" title="MeasureSpec与LayoutParams对应关系"></a>MeasureSpec与LayoutParams对应关系</h4><p>对于DoctorView其MeasureSpec是由屏幕尺寸和自身的LayoutParams决定的，得到的MeasureSpec当然是传递给子View使用，然后子View再根据此参数和自身的LayoutParams来确定自己的MeasureSpec。</p>
+<p>DoctorView MeasureSpec的获取过程:</p>
+<pre><code class="java">//class ViewRootImpl
+//当然是在performTraversal里面调用的:P
+//lp View本身的LayoutParams参数
+//desiredWindowWidth/desiredWindowHeight 屏幕的宽高
+private boolean measureHierarchy(final View host, final WindowManager.LayoutParams lp, final Resources res, 
+                                  final int desiredWindowWidth, final int desiredWindowHeight) &#123;
+    //...
+    childWidthMeasureSpec = getRootMeasureSpec(desiredWindowWidth, lp.width);
+    childHeightMeasureSpec = getRootMeasureSpec(desiredWindowHeight, lp.height);
+    performMeasure(childWidthMeasureSpec, childHeightMeasureSpec);
+    //...
+&#125;
+
+private void performMeasure(int childWidthMeasureSpec, int childHeightMeasureSpec) &#123;
+    //...
+    //mView就是与ViewRootImpl关联的DectorView!
+    //通过public void setView(View view, WindowManager.LayoutParams attrs, View panelParentView)设置的
+    mView.measure(childWidthMeasureSpec, childHeightMeasureSpec);
+    //...
+&#125;
+
+//根据屏幕宽高，DectorView的LayoutParams计算Dector的MeasureSpec
+private static int getRootMeasureSpec(int windowSize, int rootDimension) &#123;
+    int measureSpec;
+    switch (rootDimension) &#123;
+    case ViewGroup.LayoutParams.MATCH_PARENT:
+        // Window can&#39;t resize. Force root view to be windowSize.
+        measureSpec = MeasureSpec.makeMeasureSpec(windowSize, MeasureSpec.EXACTLY);
+        break;
+    case ViewGroup.LayoutParams.WRAP_CONTENT:
+        // Window can resize. Set max size for root view.
+        measureSpec = MeasureSpec.makeMeasureSpec(windowSize, MeasureSpec.AT_MOST);
+        break;
+    default:
+        // Window wants to be an exact size. Force root view to be that size.
+        measureSpec = MeasureSpec.makeMeasureSpec(rootDimension, MeasureSpec.EXACTLY);
+        break;
+    &#125;
+    return measureSpec;
+&#125;
+</code></pre>
+<p>对于View来说，MeasureSpec是由自身的LayoutParams和父View传递过来的MeasureSpec决定的。</p>
+<pre><code class="java">//ViewGroup里面遍历测量所有的子View
+protected void measureChildren(int widthMeasureSpec, int heightMeasureSpec) &#123;
+    final int size = mChildrenCount;
+    final View[] children = mChildren;
+    for (int i = 0; i &lt; size; ++i) &#123;
+        final View child = children[i];
+        if ((child.mViewFlags &amp; VISIBILITY_MASK) != GONE) &#123;
+            measureChild(child, widthMeasureSpec, heightMeasureSpec);
+        &#125;
+    &#125;
+&#125;
+
+//不包含Margin，对应的有measureChildWithMargins
+protected void measureChild(View child, int parentWidthMeasureSpec, int parentHeightMeasureSpec) &#123;
+    final LayoutParams lp = child.getLayoutParams();
+    final int childWidthMeasureSpec = getChildMeasureSpec(parentWidthMeasureSpec,mPaddingLeft + mPaddingRight, lp.width);
+    final int childHeightMeasureSpec = getChildMeasureSpec(parentHeightMeasureSpec, mPaddingTop + mPaddingBottom, lp.height);
+    child.measure(childWidthMeasureSpec, childHeightMeasureSpec);
+&#125;
+
+//根据子View的LayoutParams和父View的MeasureSpec来确定子View的MeasureSpec
+//spec:父View的MeasureSpec
+//childDimension:可能值有match_parent,wrap_parent,精确值
+public static int getChildMeasureSpec(int spec, int padding, int childDimension) &#123;
+    int specMode = MeasureSpec.getMode(spec);
+    int specSize = MeasureSpec.getSize(spec);
+    int size = Math.max(0, specSize - padding);
+    int resultSize = 0;
+    int resultMode = 0;
+    switch (specMode) &#123;
+    // Parent has imposed an exact size on us
+    case MeasureSpec.EXACTLY:
+        if (childDimension &gt;= 0) &#123;
+            resultSize = childDimension;
+            resultMode = MeasureSpec.EXACTLY;
+        &#125; else if (childDimension == LayoutParams.MATCH_PARENT) &#123;
+            // Child wants to be our size. So be it.
+            resultSize = size;
+            resultMode = MeasureSpec.EXACTLY;
+        &#125; else if (childDimension == LayoutParams.WRAP_CONTENT) &#123;
+            // Child wants to determine its own size. It can&#39;t be
+            // bigger than us.
+            resultSize = size;
+            resultMode = MeasureSpec.AT_MOST;
+        &#125;
+        break;
+
+    // Parent has imposed a maximum size on us
+    case MeasureSpec.AT_MOST:
+        if (childDimension &gt;= 0) &#123;
+            // Child wants a specific size... so be it
+            resultSize = childDimension;
+            resultMode = MeasureSpec.EXACTLY;
+        &#125; else if (childDimension == LayoutParams.MATCH_PARENT) &#123;
+            // Child wants to be our size, but our size is not fixed.
+            // Constrain child to not be bigger than us.
+            resultSize = size;
+            resultMode = MeasureSpec.AT_MOST;
+        &#125; else if (childDimension == LayoutParams.WRAP_CONTENT) &#123;
+            // Child wants to determine its own size. It can&#39;t be
+            // bigger than us.
+            resultSize = size;
+            resultMode = MeasureSpec.AT_MOST;
+        &#125;
+        break;
+
+    // Parent asked to see how big we want to be
+    case MeasureSpec.UNSPECIFIED:
+        if (childDimension &gt;= 0) &#123;
+            // Child wants a specific size... let him have it
+            resultSize = childDimension;
+            resultMode = MeasureSpec.EXACTLY;
+        &#125; else if (childDimension == LayoutParams.MATCH_PARENT) &#123;
+            // Child wants to be our size... find out how big it should
+            // be
+            resultSize = View.sUseZeroUnspecifiedMeasureSpec ? 0 : size;
+            resultMode = MeasureSpec.UNSPECIFIED;
+        &#125; else if (childDimension == LayoutParams.WRAP_CONTENT) &#123;
+            // Child wants to determine its own size.... find out how
+            // big it should be
+            resultSize = View.sUseZeroUnspecifiedMeasureSpec ? 0 : size;
+            resultMode = MeasureSpec.UNSPECIFIED;
+        &#125;
+        break;
+    &#125;
+    return MeasureSpec.makeMeasureSpec(resultSize, resultMode);
+&#125;
+</code></pre>
+<p>总结(记住这是View#onMeasure里面得到的参数):</p>
+<ul>
+<li>当View固定宽高，specMode为 MeasureSpec.EXACTLY,并且sepcSize为固定宽高数值。</li>
+<li>当View为match_parent时，specMode跟随父View，并且 不能超过父View剩余空间大小(SpecSize就是父View剩余空间的大小)</li>
+<li>当View为wrap_parent时，specMode为 MeasureSpec.AT_MOST，并且 不能超过父容器剩余空间大小(SpecSize就是父View剩余空间的大小)</li>
+</ul>
+<h4 id="View的工作过程"><a href="#View的工作过程" class="headerlink" title="View的工作过程"></a>View的工作过程</h4><h5 id="1-measure过程"><a href="#1-measure过程" class="headerlink" title="1.measure过程"></a>1.measure过程</h5><p>上面提到的 measureChild(View child, int parentWidthMeasureSpec, int parentHeightMeasureSpec) 函数，里面会调用 child.measure(parentWidthMeasureSpec,parentHeightMeasureSpec) 传递进去就是根据子View和父View的MeasureSpec计算出来的MeasureSpec。</p>
+<pre><code class="java">public final void measure(int widthMeasureSpec, int heightMeasureSpec)
+</code></pre>
+<p>这是一个final方法，实际的测量是在onMeasue里面，我要实现的是这个方法，View里面有默认的实现:</p>
+<pre><code class="java">protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) &#123;
+    setMeasuredDimension(getDefaultSize(getSuggestedMinimumWidth(), widthMeasureSpec),getDefaultSize(getSuggestedMinimumHeight(), heightMeasureSpec));
+&#125;
+public static int getDefaultSize(int size, int measureSpec) &#123;
+    int result = size;
+    int specMode = MeasureSpec.getMode(measureSpec);
+    int specSize = MeasureSpec.getSize(measureSpec);
+    switch (specMode) &#123;
+    case MeasureSpec.UNSPECIFIED:
+        result = size;
+        break;
+    //wrap_content和match_content都是父View传递过来的建议大小
+    case MeasureSpec.AT_MOST:
+    case MeasureSpec.EXACTLY:
+        result = specSize;
+        break;
+    &#125;
+    return result;
+&#125;
+</code></pre>
+<p>当我们给View设置wrap_content的时候，默认还是父View传递过来的建议大小，所以自定义控件的时候，需要实现这种情况，对于非wrap_cotent，沿用系统默认的即可。</p>
+<p>计算大小的时候，可以调用View#resolveSizeAndState(int size, int measureSpec, int childMeasuredState),可以加上测量结果的状态，目前有两个一个正常和MEASURED_STATE_TOO_SMALL，View#getMeasuredWidthAndState()获取子View测量的结果，包括测量状态(高8位表示)。</p>
+<pre><code>+-------------------+
++ 0x00 ffffffff     +
++-------------------+
+前面两位为01表示子View的测量结果大于父View所给的空间
+</code></pre><p>对于 MeasureSpec.UNSPECIFIED 的情况，传递过来的是 getSuggestedMinimumWidth/Height:</p>
+<pre><code class="java">  protected int getSuggestedMinimumWidth() &#123;
+        //没有设置View的背景mMinWidth对应android:minWidth这个属性所指定的值
+        //如果设置的View的背景就是背景Drawable的最小宽度
+        return (mBackground == null) ? mMinWidth : max(mMinWidth, mBackground.getMinimumWidth());
+    &#125;
+
+
+  public int getMinimumWidth() &#123;
+        //就是drawable原始宽度
+        final int intrinsicWidth = getIntrinsicWidth();
+        return intrinsicWidth &gt; 0 ? intrinsicWidth : 0;
+  &#125;
+
+</code></pre>
+<p>此种模式系统内部使用，基本不用。<br>ViewGroup是一个抽象类，里面没有默认实现 onMeasure,我们需要根据布局的特性来测量其宽高。具体的测量可以参考前面DectorView测量子View的过程。</p>
+<p>另外在 onMeasure 里面测量完毕之后一定要调用 setMeasuredDimension(int measuredWidth, int measuredHeight) 把测量结果存储，否则将会在执行measure的时候抛 IllegalStateException。</p>
+<p>Activity的生命周期和View的measure测量过程是不同步的，所以在onCreate,onStart,onResume时刻是获取不到View的宽高的，有四种方法获取:</p>
+<ul>
+<li><p>Activity/View#onWindowFocusChanged:<br>Activity窗口得到和失去焦点都会被调用即onResume和onPause。在这个时机获取View宽高是没有问题的。</p>
+</li>
+<li><p>view.post(Runnable)<br>通过post可以将一个Runnable投递到消息队列的尾部，然后等待Looper调用此Runnable的时候，这是可以获取View的宽高。</p>
+</li>
+<li><p>ViewTreeObserver<br>ViewTreeObserver的众多回调都可以完成这个功能，例如OnGlobalLayoutListener这个接口，当View树的状态改变或者或者View的可见性改变是onGlobalLayout方法都会被回调，而且很多次这个时候可以获取View的宽高，实例代码:</p>
+</li>
+</ul>
+<pre><code class="java">protected void onStart() &#123;
+    super.onStart();
+    ViewTreeObserver observer = view.getViewTreeObserver();
+    observer.addOnGlobalLayoutListener(new ObGlobalLayoutListener() &#123;
+            @Override
+            public void onGlobalLayout() &#123;
+                view.getViewTreeObserver().removeGlobalOnLayoutListener(this);
+                int width = view.getMeasureWidth();
+                int height = view.getMeasureHeight();
+            &#125;
+        &#125;);
+&#125;
+
+</code></pre>
+<ul>
+<li>view.measure(int widthMeasureSpec,int heightMeasureSpec)不推荐使用</li>
+</ul>
+<h5 id="2-Layout过程"><a href="#2-Layout过程" class="headerlink" title="2.Layout过程"></a>2.Layout过程</h5><p>layout方法确定View本身的位置，里面调用setFrame来确定View四个顶点的位置，即mLeft,mTop,mRight,mBottom；而onLayout方法是确定子元素的位置，内部又会调用layout来确定View的位置。</p>
+<p>getMeasuredWidth/getMeasuredHeight测量宽度/高度是在View测量完成后产生的，而最终的宽高getWidth/getHeight是在layout后产生的。</p>
+<pre><code class="java">public final int getMeasuredWidth() &#123;
+    return mMeasuredWidth &amp; MEASURED_SIZE_MASK;
+&#125;
+
+public final int getMeasuredHeight() &#123;
+    return mMeasuredHeight &amp; MEASURED_SIZE_MASK;
+&#125;
+
+public final int getHeight() &#123;
+    return mBottom - mTop;
+&#125;
+
+public final int getWidth() &#123;
+    return mRight - mLeft;
+&#125;
+</code></pre>
+<p>View四个定点的值会在layout-&gt;setFrame里面赋值，如果我们重写了layout方法，就可以使最终宽高和测量宽高不一致。一般情况中两者的值都是相等的。</p>
+<hr>
+<p>在定义ViewGroup的时候可以根据需要实现这个方法:</p>
+<pre><code class="java">protected LayoutParams generateDefaultLayoutParams()&#123;
+    //...
+&#125;
+</code></pre>
+<p>子View就可以通过LayoutParams类告诉其父视图它想要地大小，位置，方向等，就像 RelativeLayout 里面的各种位置属性(toLeftOf,toRight…)，ViewGroup默认返回的是支持layout_width和layout_height属性的LayoutParams。这个书中没有说明，更详细的可以<a target="_blank" rel="noopener" href="http://blog.csdn.net/qinjuning/article/details/8051811#t1">参考这个</a>。</p>
+<h5 id="3-draw过程"><a href="#3-draw过程" class="headerlink" title="3.draw过程"></a>3.draw过程</h5><ol>
+<li>Draw the background</li>
+<li>If necessary, save the canvas’ layers to prepare for fading</li>
+<li>Draw view’s content</li>
+<li>Draw children</li>
+<li>If necessary, draw the fading edges and restore layers</li>
+<li>Draw decorations (scrollbars for instance)</li>
+</ol>
+<p>主要是3和4，调用 onDraw 方法来绘制自己，dispatchDraw 里遍历调用子View的draw一层一层地传递。</p>
+<p>View#setWillNotDraw，用于设置是否绘制以便系统做优化，View默认是没有启用这个标志的，而ViewGroup默认启用。</p>
+<h4 id="自定义View须知"><a href="#自定义View须知" class="headerlink" title="自定义View须知"></a>自定义View须知</h4><p>1.让View支持wrap_content</p>
+<p>2.支持padding。自定义View（不是ViewGroup）margin是由父容器控制的，不需要做特殊处理，但是ViewGroup就需要写onMeasure和onLayout里面处理了</p>
+<p>3.不要在View里面使用Handler，处理不当会内存泄漏，里面有post已经能完成相关功能。</p>
+<p>4.如果有线程或者动画，考虑在 onDetachedFromWindow 里面停止</p>
+<p>5.处理滑动冲突</p>
+<p>更标准的自定义View的流程可以参考<a target="_blank" rel="noopener" href="http://developer.android.com/intl/zh-cn/training/custom-views/index.html">官方文档</a>，<a target="_blank" rel="noopener" href="http://developer.android.com/intl/zh-cn/reference/android/view/ViewGroup.html">ViewGroup</a>，还有<a target="_blank" rel="noopener" href="https://github.com/JStumpp/awesome-android#gui">Github</a>上那些优秀的控件。</p>
+
+
+
+
+</body>
+</html>

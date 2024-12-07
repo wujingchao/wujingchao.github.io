@@ -1,0 +1,398 @@
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    
+<script src="/js/less.min.js"></script>
+
+    
+    
+<link rel="stylesheet" href="/css/main.css">
+
+    
+<link rel="stylesheet" href="/prettify/tomorrow.css">
+
+    
+<script src="/js/jquery-2.1.4.min.js"></script>
+
+    
+<script src="/js/raphael-min.js"></script>
+
+    
+<script src="/js/underscore-min.js"></script>
+
+    
+<script src="/js/sequence-diagram-min.js"></script>
+
+    
+<script src="/js/flowchart-latest.js"></script>
+
+    
+<script src="/prettify/prettify.js"></script>
+
+    
+<script src="/js/common.js"></script>
+
+    
+<script src="/js/gitment.browser.js"></script>
+
+    
+<link rel="stylesheet" href="/css/default.css">
+
+    
+<link rel="stylesheet" href="/lib/fancybox/dist/jquery.fancybox.css">
+
+
+    
+<script src="/lib/fancybox/dist/jquery.fancybox.js"></script>
+
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    
+    
+    <script>
+        (function (i, s, o, g, r, a, m) {
+            i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+                (i[r].q = i[r].q || []).push(arguments)
+            }, i[r].l = 1 * new Date(); a = s.createElement(o),
+                m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
+        })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+        ga('create', 'UA-71897482-1', 'auto');
+        ga('send', 'pageview');
+    </script>
+    
+    
+    <title>读书笔记:registerReceiver注册广播</title>
+    <meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=0.8, user-scalable=no">
+<meta name="generator" content="Hexo 6.3.0"></head>
+<body>
+
+<h3 id="Android开发艺术探索-四大组件的工作过程之registerReceiver注册广播"><a href="#Android开发艺术探索-四大组件的工作过程之registerReceiver注册广播" class="headerlink" title="Android开发艺术探索:四大组件的工作过程之registerReceiver注册广播"></a><a target="_blank" rel="noopener" href="http://www.amazon.cn/Android%E5%BC%80%E5%8F%91%E8%89%BA%E6%9C%AF%E6%8E%A2%E7%B4%A2-%E4%BB%BB%E7%8E%89%E5%88%9A/dp/B014HV1X3K/ref=sr_1_1?ie=UTF8&amp;qid=1451616304&amp;sr=8-1&amp;keywords=Android%E5%BC%80%E5%8F%91%E8%89%BA%E6%9C%AF%E6%8E%A2%E7%B4%A2">Android开发艺术探索</a>:四大组件的工作过程之registerReceiver注册广播</h3><p>BroadcastReceiver消息型组件，用于不同组件之间或应用之间传递消息。消息订阅不同于观察者模式，观察者模式耦合性太强，消息订阅模式中发布消息者完全不需要知道订阅者的存在，所以就需要第三方的组件来帮助存储转发，这个组件就是ActivityManagerService。</p>
+<h4 id="注册广播流程"><a href="#注册广播流程" class="headerlink" title="注册广播流程"></a>注册广播流程</h4><p>注册广播的入口ContextImpl，对应的<a href="/assets/注册广播时序图.png">时序图</a>。</p>
+<pre><code>//两个重载的方法:
+
+@Override
+public Intent registerReceiver(BroadcastReceiver receiver, IntentFilter filter) &#123;
+    return registerReceiver(receiver, filter, null, null);
+&#125;
+
+@Override
+public Intent registerReceiver(BroadcastReceiver receiver, IntentFilter filter,
+        String broadcastPermission, Handler scheduler) &#123;
+    return registerReceiverInternal(receiver, getUserId(),
+            filter, broadcastPermission, scheduler, getOuterContext());
+&#125;
+
+</code></pre><p>broadcastPermission广播者需要有相应的权限才接收(权限当然在Manifest声明)，scheduler表示收到广播处理消息的Handler，默认是在主线程ActivityThread里执行的，所以不能有耗时的操作。</p>
+<pre><code>private Intent registerReceiverInternal(BroadcastReceiver receiver, int userId,
+        IntentFilter filter, String broadcastPermission,
+        Handler scheduler, Context context) &#123;
+    IIntentReceiver rd = null;
+    if (receiver != null) &#123;
+        if (mPackageInfo != null &amp;&amp; context != null) &#123;
+            if (scheduler == null) &#123;
+                scheduler = mMainThread.getHandler();
+            &#125;
+            rd = mPackageInfo.getReceiverDispatcher(
+                receiver, context, scheduler,
+                mMainThread.getInstrumentation(), true);
+        &#125; else &#123;
+            //..
+        &#125;
+    &#125;
+    try &#123;
+        return ActivityManagerNative.getDefault().registerReceiver(
+                mMainThread.getApplicationThread(), mBasePackageName,
+                rd, filter, broadcastPermission, userId);
+    &#125; catch (RemoteException e) &#123;
+        return null;
+    &#125;
+&#125;
+</code></pre><p>mPackageInfo是LoadedApk的类型，调用getReceiverDispatcher得到IItentReceiver，用于收到广播后服务端回调performReceive方法，并将注册广播的信息放到LoadedApk的mReceivers集合里，ReceiverDispatcher内部保存了BroadcastReceiver和InnerReceiver，当接收到广播时，ReceiverDispatcher可以方便地调用BroadcastReceiver#onReceive。</p>
+<pre><code>//一个Context对应一个注册的广播集合，重复注册只接收一次，不同的Context注册相同的广播每个注册的Context会收到广播
+private final ArrayMap&lt;Context, ArrayMap&lt;BroadcastReceiver, ReceiverDispatcher&gt;&gt; mReceivers
+    = new ArrayMap&lt;Context, ArrayMap&lt;BroadcastReceiver, LoadedApk.ReceiverDispatcher&gt;&gt;();
+
+//registered为传递过来的true
+public IIntentReceiver getReceiverDispatcher(BroadcastReceiver r,
+        Context context, Handler handler,
+        Instrumentation instrumentation, boolean registered) &#123;
+    synchronized (mReceivers) &#123;
+        LoadedApk.ReceiverDispatcher rd = null;
+        ArrayMap&lt;BroadcastReceiver, LoadedApk.ReceiverDispatcher&gt; map = null;
+        //...
+        if (rd == null) &#123;
+            rd = new ReceiverDispatcher(r, context, handler,
+                    instrumentation, registered);
+            if (registered) &#123;
+                if (map == null) &#123;
+                    map = new ArrayMap&lt;BroadcastReceiver, LoadedApk.ReceiverDispatcher&gt;();
+                    mReceivers.put(context, map);
+                &#125;
+                map.put(r, rd);
+            &#125;
+        &#125; else &#123;
+            //...
+        &#125;
+        rd.mForgotten = false;
+        return rd.getIIntentReceiver();
+    &#125;
+&#125;
+</code></pre><p>然后通过ActivityManagerNative.getDefault()获得ActivityManagerProxy向AMS发起IPC，调用registerReceiver方法:</p>
+<pre><code>public Intent registerReceiver(IApplicationThread caller, String packageName,
+        IIntentReceiver receiver,
+        IntentFilter filter, String perm, int userId) throws RemoteException
+&#123;
+    Parcel data = Parcel.obtain();
+    Parcel reply = Parcel.obtain();
+    data.writeInterfaceToken(IActivityManager.descriptor);
+    data.writeStrongBinder(caller != null ? caller.asBinder() : null);
+    data.writeString(packageName);
+    data.writeStrongBinder(receiver != null ? receiver.asBinder() : null);
+    filter.writeToParcel(data, 0);
+    data.writeString(perm);
+    data.writeInt(userId);
+    mRemote.transact(REGISTER_RECEIVER_TRANSACTION, data, reply, 0);
+    reply.readException();
+    Intent intent = null;
+    int haveIntent = reply.readInt();
+    if (haveIntent != 0) &#123;
+        intent = Intent.CREATOR.createFromParcel(reply);
+    &#125;
+    reply.recycle();
+    data.recycle();
+    return intent;
+&#125;
+</code></pre><p>然后就执行到了AMS的registerReceiver方法:</p>
+<pre><code>//为了更快地查找，这里使用的就不是ArrayMap了
+final HashMap&lt;IBinder, ReceiverList&gt; mRegisteredReceivers =
+        new HashMap&lt;IBinder, ReceiverList&gt;();
+
+public Intent registerReceiver(IApplicationThread caller, String callerPackage,
+        IIntentReceiver receiver, IntentFilter filter, String permission, int userId) &#123;
+    //...
+    int callingUid;
+    int callingPid;
+    synchronized(this) &#123;
+        ProcessRecord callerApp = null;
+        if (caller != null) &#123;
+            callerApp = getRecordForAppLocked(caller);
+            if (callerApp == null) &#123;
+               //...throw exception
+            &#125;
+            //如果调用进程没有运行
+            if (callerApp.info.uid != Process.SYSTEM_UID &amp;&amp;
+                    !callerApp.pkgList.containsKey(callerPackage) &amp;&amp;
+                    !&quot;android&quot;.equals(callerPackage)) &#123;
+               //...throw exception
+            &#125;
+            callingUid = callerApp.info.uid;
+            callingPid = callerApp.pid;
+        &#125; else &#123;
+            //...
+        &#125;
+
+        userId = this.handleIncomingUser(callingPid, callingUid, userId,
+                true, ALLOW_FULL_ONLY, &quot;registerReceiver&quot;, callerPackage);
+
+        List allSticky = null;
+
+        Iterator actions = filter.actionsIterator();
+        if (actions != null) &#123;
+            while (actions.hasNext()) &#123;
+                String action = (String)actions.next();
+                allSticky = getStickiesLocked(action, filter, allSticky,
+                        UserHandle.USER_ALL);
+                allSticky = getStickiesLocked(action, filter, allSticky,
+                        UserHandle.getUserId(callingUid));
+            &#125;
+        &#125; else &#123;
+          //...
+        &#125;
+
+        // The first sticky in the list is returned directly back to
+        // the client.
+        Intent sticky = allSticky != null ? (Intent)allSticky.get(0) : null;
+        //直接返回sticky的结果
+        if (receiver == null) &#123;
+            return sticky;
+        &#125;
+
+        ReceiverList rl
+            = (ReceiverList)mRegisteredReceivers.get(receiver.asBinder());
+        if (rl == null) &#123;
+            rl = new ReceiverList(this, callerApp, callingPid, callingUid,
+                    userId, receiver);
+            if (rl.app != null) &#123;
+                rl.app.receivers.add(rl);
+            &#125; else &#123;
+                try &#123;
+                    receiver.asBinder().linkToDeath(rl, 0);
+                &#125; catch (RemoteException e) &#123;
+                    return sticky;
+                &#125;
+                rl.linkedToDeath = true;
+            &#125;
+            mRegisteredReceivers.put(receiver.asBinder(), rl);
+        &#125; else if (rl.uid != callingUid) &#123;
+            //...   
+        &#125;
+        BroadcastFilter bf = new BroadcastFilter(filter, rl, callerPackage,
+                permission, callingUid, userId);
+        rl.add(bf);
+        //..
+        mReceiverResolver.addFilter(bf);
+
+        // Enqueue broadcasts for all existing stickies that match
+        // this filter.
+        if (allSticky != null) &#123;
+           //...
+        &#125;
+
+        return sticky;
+    &#125;
+&#125;
+
+final SparseArray&lt;ArrayMap&lt;String, ArrayList&lt;Intent&gt;&gt;&gt; mStickyBroadcasts =
+            new SparseArray&lt;ArrayMap&lt;String, ArrayList&lt;Intent&gt;&gt;&gt;();
+
+private final List getStickiesLocked(String action, IntentFilter filter,
+        List cur, int userId) &#123;
+    final ContentResolver resolver = mContext.getContentResolver();
+    ArrayMap&lt;String, ArrayList&lt;Intent&gt;&gt; stickies = mStickyBroadcasts.get(userId);
+    if (stickies == null) &#123;
+        return cur;
+    &#125;
+    final ArrayList&lt;Intent&gt; list = stickies.get(action);
+    if (list == null) &#123;
+        return cur;
+    &#125;
+    int N = list.size();
+    for (int i=0; i&lt;N; i++) &#123;
+        Intent intent = list.get(i);
+        if (filter.match(resolver, intent, true, TAG) &gt;= 0) &#123;
+            if (cur == null) &#123;
+                cur = new ArrayList&lt;Intent&gt;();
+            &#125;
+            cur.add(intent);
+        &#125;
+    &#125;
+    return cur;
+&#125;
+</code></pre><p>当我们发送sticky广播的时候，AMS会把其保存在mStickyBroadcasts集合里，如果能在里面匹配到对应的action，就会把Intent寻找出来并返回，如果只想获取结果而不想注册广播可以将BroadcastReceiver传递为null。</p>
+<p>mRegisteredReceivers用于保存IIntentReceiver与注册广播的对应关系，用于使用IIntentReceiver快速找到注册的广播ReceiverList(里面存储多个BroadcastFilter)，例如反注册广播。所以一个广播可以接收到多个不同action的广播。</p>
+<p>mReceiverResolver用于保存注册的所有广播(BroadcastFilter)，用于发送广播快速找到注册的IIntentReceiver，进行分发。</p>
+<h4 id="反注册广播流程"><a href="#反注册广播流程" class="headerlink" title="反注册广播流程"></a>反注册广播流程</h4><p>入口同样是在ContextImpl</p>
+<pre><code>@Override
+public void unregisterReceiver(BroadcastReceiver receiver) &#123;
+    if (mPackageInfo != null) &#123;
+        IIntentReceiver rd = mPackageInfo.forgetReceiverDispatcher(
+                getOuterContext(), receiver);
+        try &#123;
+            ActivityManagerNative.getDefault().unregisterReceiver(rd);
+        &#125; catch (RemoteException e) &#123;
+        &#125;
+    &#125; else &#123;
+        //...
+    &#125;
+&#125;
+</code></pre><p>调用mPackageInfo#forgetReceiverDispatcher移除mReceiver里面注册过的广播。</p>
+<pre><code>//LoadedApk.java
+public IIntentReceiver forgetReceiverDispatcher(Context context,
+        BroadcastReceiver r) &#123;
+    synchronized (mReceivers) &#123;
+        //找到Context注册的广播集合
+        ArrayMap&lt;BroadcastReceiver, LoadedApk.ReceiverDispatcher&gt; map = mReceivers.get(context);
+        LoadedApk.ReceiverDispatcher rd = null;
+        if (map != null) &#123;
+            rd = map.get(r);
+            if (rd != null) &#123;
+                map.remove(r);
+                if (map.size() == 0) &#123;
+                    mReceivers.remove(context);
+                &#125;
+                if (r.getDebugUnregister()) &#123;
+                   //...调试使用的
+                &#125;
+                rd.mForgotten = true;
+                return rd.getIIntentReceiver();
+            &#125;
+        &#125;
+
+        //...
+
+        if (context == null) &#123;
+            throw new IllegalStateException(&quot;Unbinding Receiver &quot; + r
+                    - &quot; from Context that is no longer in use: &quot; + context);
+        &#125; else &#123;
+            throw new IllegalArgumentException(&quot;Receiver not registered: &quot; + r);
+        &#125;
+
+    &#125;
+&#125;
+</code></pre><p>从mReceivers找到注册广播的集合(没找到就抛异常)，移除已经注册的BroadcastRecevier，并返回对应的IIntentReceiver，用于AMS反注册。</p>
+<p>接着通过ActivityManagerNative.getDefault()得到ActivityManagerProxy，向AMS发起IPC调用:</p>
+<pre><code>//ActivityManagerProxy
+public void unregisterReceiver(IIntentReceiver receiver) throws RemoteException
+&#123;
+    Parcel data = Parcel.obtain();
+    Parcel reply = Parcel.obtain();
+    data.writeInterfaceToken(IActivityManager.descriptor);
+    data.writeStrongBinder(receiver.asBinder());
+    mRemote.transact(UNREGISTER_RECEIVER_TRANSACTION, data, reply, 0);
+    reply.readException();
+    data.recycle();
+    reply.recycle();
+&#125;
+</code></pre><p>进入到AMS的unregisterReceiver:</p>
+<pre><code>public void unregisterReceiver(IIntentReceiver receiver) &#123;
+    final long origId = Binder.clearCallingIdentity();
+    try &#123;
+        boolean doTrim = false;
+
+        synchronized(this) &#123;
+            ReceiverList rl = mRegisteredReceivers.get(receiver.asBinder());
+            if (rl != null) &#123;
+                if (rl.curBroadcast != null) &#123;
+                  //...
+                &#125;
+
+                if (rl.app != null) &#123;
+                    rl.app.receivers.remove(rl);
+                &#125;
+                removeReceiverLocked(rl);
+                if (rl.linkedToDeath) &#123;
+                    rl.linkedToDeath = false;
+                    rl.receiver.asBinder().unlinkToDeath(rl, 0);
+                &#125;
+            &#125;
+        &#125;
+
+        // If we actually concluded any broadcasts, we might now be able
+        // to trim the recipients&#39; apps from our working set
+        if (doTrim) &#123;
+            trimApplications();
+            return;
+        &#125;
+
+    &#125; finally &#123;
+        Binder.restoreCallingIdentity(origId);
+    &#125;
+&#125;
+
+void removeReceiverLocked(ReceiverList rl) &#123;
+    mRegisteredReceivers.remove(rl.receiver.asBinder());
+    int N = rl.size();
+    for (int i=0; i&lt;N; i++) &#123;
+        mReceiverResolver.removeFilter(rl.get(i));
+    &#125;
+&#125;
+</code></pre><p>将注册的IIntentReceiver和BroadcastFilter(只移除对应IIntentReceiver注册的)移除。</p>
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,89 @@
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    
+<script src="/js/less.min.js"></script>
+
+    
+    
+<link rel="stylesheet" href="/css/main.css">
+
+    
+<link rel="stylesheet" href="/prettify/tomorrow.css">
+
+    
+<script src="/js/jquery-2.1.4.min.js"></script>
+
+    
+<script src="/js/raphael-min.js"></script>
+
+    
+<script src="/js/underscore-min.js"></script>
+
+    
+<script src="/js/sequence-diagram-min.js"></script>
+
+    
+<script src="/js/flowchart-latest.js"></script>
+
+    
+<script src="/prettify/prettify.js"></script>
+
+    
+<script src="/js/common.js"></script>
+
+    
+<script src="/js/gitment.browser.js"></script>
+
+    
+<link rel="stylesheet" href="/css/default.css">
+
+    
+<link rel="stylesheet" href="/lib/fancybox/dist/jquery.fancybox.css">
+
+
+    
+<script src="/lib/fancybox/dist/jquery.fancybox.js"></script>
+
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    
+    
+    <script>
+        (function (i, s, o, g, r, a, m) {
+            i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+                (i[r].q = i[r].q || []).push(arguments)
+            }, i[r].l = 1 * new Date(); a = s.createElement(o),
+                m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
+        })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+        ga('create', 'UA-71897482-1', 'auto');
+        ga('send', 'pageview');
+    </script>
+    
+    
+    <title>阅读Binder代码的一些疑问</title>
+    <meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=0.8, user-scalable=no">
+<meta name="generator" content="Hexo 6.3.0"></head>
+<body>
+
+<h3 id="阅读Binder代码的一些疑问"><a href="#阅读Binder代码的一些疑问" class="headerlink" title="阅读Binder代码的一些疑问"></a>阅读Binder代码的一些疑问</h3><p>1.BinderInternal.getContextObject(null)的时候，有没有发binder命令？</p>
+<p>有，会使用PING_TRANSACTION，检查ServieManger Binder对象是否还活着，如果还活着的话，就给上层返回一个BpBinder对象。</p>
+<p>2.Service将自己加到ServerManager里面，在Service里面存的是什么东西？</p>
+<p> 存放在ServiceManager维护的svcinfo的链表里，主要的信息有两个，一个是uint32类型的handle，以及Service的Name</p>
+<p> 那这个handle到底是什么东西，表示什么？</p>
+<p> BBinder对象的地址</p>
+<p> 3.对binder驱动做mmap系统调用的作用是什么？</p>
+<p> 将一页物理内存映射到内核的虚拟地址空间和进程的虚拟地址空间，并把该空闲的内存块加到binder_proc维护的链表里面。有其他进程往该进程发数据，驱动直接把其他进程空间的数据往这块内存拷贝，这样，都能该进程就可以直接访问该内存里面的数据。</p>
+<p> 4.Parcel.remove部分数据是怎么实现的?</p>
+<p> 5.应用的Binder线程是怎么启动的，在哪里启动的？</p>
+<p> 6.servicemanager以什么形式在系统中存在？</p>
+<p> 后台进程的形态，在内核启动的时候，解析init.rc脚本的时候，就把位于/system/bin/servicemanager可执行程序启动。</p>
+
+
+
+
+</body>
+</html>

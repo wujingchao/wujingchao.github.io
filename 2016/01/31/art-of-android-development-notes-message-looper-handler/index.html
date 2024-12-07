@@ -1,0 +1,373 @@
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    
+<script src="/js/less.min.js"></script>
+
+    
+    
+<link rel="stylesheet" href="/css/main.css">
+
+    
+<link rel="stylesheet" href="/prettify/tomorrow.css">
+
+    
+<script src="/js/jquery-2.1.4.min.js"></script>
+
+    
+<script src="/js/raphael-min.js"></script>
+
+    
+<script src="/js/underscore-min.js"></script>
+
+    
+<script src="/js/sequence-diagram-min.js"></script>
+
+    
+<script src="/js/flowchart-latest.js"></script>
+
+    
+<script src="/prettify/prettify.js"></script>
+
+    
+<script src="/js/common.js"></script>
+
+    
+<script src="/js/gitment.browser.js"></script>
+
+    
+<link rel="stylesheet" href="/css/default.css">
+
+    
+<link rel="stylesheet" href="/lib/fancybox/dist/jquery.fancybox.css">
+
+
+    
+<script src="/lib/fancybox/dist/jquery.fancybox.js"></script>
+
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    
+    
+    <script>
+        (function (i, s, o, g, r, a, m) {
+            i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+                (i[r].q = i[r].q || []).push(arguments)
+            }, i[r].l = 1 * new Date(); a = s.createElement(o),
+                m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
+        })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+        ga('create', 'UA-71897482-1', 'auto');
+        ga('send', 'pageview');
+    </script>
+    
+    
+    <title>读书笔记:Android的消息机制</title>
+    <meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=0.8, user-scalable=no">
+<meta name="generator" content="Hexo 6.3.0"></head>
+<body>
+
+<h3 id="Android开发艺术探索-Android的消息机制"><a href="#Android开发艺术探索-Android的消息机制" class="headerlink" title="Android开发艺术探索:Android的消息机制"></a><a target="_blank" rel="noopener" href="http://www.amazon.cn/Android%E5%BC%80%E5%8F%91%E8%89%BA%E6%9C%AF%E6%8E%A2%E7%B4%A2-%E4%BB%BB%E7%8E%89%E5%88%9A/dp/B014HV1X3K/ref=sr_1_1?ie=UTF8&amp;qid=1451616304&amp;sr=8-1&amp;keywords=Android%E5%BC%80%E5%8F%91%E8%89%BA%E6%9C%AF%E6%8E%A2%E7%B4%A2">Android开发艺术探索</a>:Android的消息机制</h3><h4 id="Android消息机制概述"><a href="#Android消息机制概述" class="headerlink" title="Android消息机制概述"></a>Android消息机制概述</h4><p>Android的消息机制主要就是指Handler的运行机制以及Handler所附带的MessageQueue和Looper的工作过程，它可以将一个任务切换到Handler所在的线程执行。</p>
+<p>Android系统规定，子线程是不能更新UI的，因为当我们调用View的invalidate或者requestLayout更新UI的时候，都会经过ViewRootImpl的这个方法:</p>
+<pre><code>void checkThread() &#123;
+    if (mThread != Thread.currentThread()) &#123;
+        throw new CalledFromWrongThreadException(
+                &quot;Only the original thread that created a view hierarchy can touch its views.&quot;);
+    &#125;
+&#125;
+</code></pre><p>即当前的线程不是UI线程会抛异常，并且还不建议在UI线程里面做耗时的操作，否则会ANR(Application No Respond)。<br>Android里面所有的View的更新操作都是线程不安全的，如果都加锁的会话导致更新UI的效率变低而且会让UI的访问逻辑变得复杂，最简单高效的方法就是采用单线程模型来处理，向主线程的消息队列发送消息来更新UI。</p>
+<p>当我们在Activity或者Service里面new Handler，并直接handleMessage的话，lint会提示下面一下内容:</p>
+<blockquote>
+<p>This Handler class should be static or leaks might occur<br>Since this Handler is declared as an inner class, it may prevent the outer class from being garbage collected. If the Handler is using a Looper or MessageQueue for a thread other than the main thread, then there is no issue. If the Handler is using the Looper or MessageQueue of the main thread, you need to fix your Handler declaration, as follows: Declare the Handler as a static class; In the outer class, instantiate a WeakReference to the outer class and pass this object to your Handler when you instantiate the Handler; Make all references to members of the outer class using the WeakReference object.</p>
+</blockquote>
+<p>上面的警告说的是在主线程,Handler里面会持有主线程的Looper和MessageQueue，由于这种是内部类的方式，Hanlder会持有Activity的引用，如果里面消息没处理完，我们结束掉了Activity，会导致Activity无法被回收进而导致内存泄漏，Service同理。所以我们需可以静态类来这样处理:</p>
+<pre><code>static class MyHandler extends Handler &#123;
+
+    private WeakReference&lt;MainActivity&gt; weakReference;
+
+    public MyHandler(MainActivity mainActivity) &#123;
+        weakReference = new WeakReference&lt;&gt;(mainActivity);;
+    &#125;
+
+    @Override
+    public void handleMessage(Message msg) &#123;
+        super.handleMessage(msg);
+        MainActivity mainActivity = weakReference.get();
+        if(mainActivity != null) &#123;
+            //do something
+        &#125;
+    &#125;
+&#125;
+</code></pre><p>另外在子线程里面创建Handler是没有Looper的，如果向里面发消息的话会抛RuntimeException。</p>
+<h4 id="Android消息机制分析"><a href="#Android消息机制分析" class="headerlink" title="Android消息机制分析"></a>Android消息机制分析</h4><p>Handler的工作流程:</p>
+<p><img src="/assets/Handler工作机制.png" alt="Handler工作机制.png"></p>
+<p>因为在子线程里面默认是没有Looper的，所以新建Handler的时候需要在当前线程准备一个Looper:</p>
+<pre><code>public class Looper &#123;
+
+    static final ThreadLocal&lt;Looper&gt; sThreadLocal = new ThreadLocal&lt;Looper&gt;();
+
+    public static void prepare() &#123;
+        prepare(true);
+    &#125;
+
+    private static void prepare(boolean quitAllowed) &#123;
+        if (sThreadLocal.get() != null) &#123;
+            throw new RuntimeException(&quot;Only one Looper may be created per thread&quot;);
+        &#125;
+        sThreadLocal.set(new Looper(quitAllowed));
+    &#125;
+
+    public static @Nullable Looper myLooper() &#123;
+        return sThreadLocal.get();
+    &#125;
+
+    private Looper(boolean quitAllowed) &#123;
+        mQueue = new MessageQueue(quitAllowed);
+        mThread = Thread.currentThread();
+    &#125;
+
+&#125;
+
+</code></pre><p>ThreadLocal是一个线程内部的数据存储类，所有线程共享一个threadLocal对象，里面的数据每个线程都有他们自己的值，当一个线程改变了里面的值，不会影响到其他线程。所以preare()就是给当前的线程准备了一个Looper，myLooper()返回当前线程里面的Looper对象，quitAllowed表示Looper能否结束，这里为true，可以调用quit退出Looper中的消息循环，主线程里面的Looper是不能结束的。创建Looper的时候里面会构造一个MessageQueue与当前的Looper关联，需要注意，虽然叫消息队列，但使用的数据结构不是队列，而是通过一个单链表来维护消息列表，链表的插入和删除效率高。</p>
+<p>创建Handler:</p>
+<pre><code>public class Handler &#123;
+    public Handler() &#123;
+        this(null, false);
+    &#125;
+
+    final MessageQueue mQueue;
+
+    public Handler(Callback callback, boolean async) &#123;
+        mLooper = Looper.myLooper();//没有调用Looper.prepare() 这里是获取不到的
+        if (mLooper == null) &#123;
+            throw new RuntimeException(
+                &quot;Can&#39;t create handler inside thread that has not called Looper.prepare()&quot;);
+        &#125;
+        mQueue = mLooper.mQueue;//与Looper里面的MessageQueue关联
+        mCallback = callback;
+        mAsynchronous = async;
+    &#125;
+&#125;
+</code></pre><p>调用loop()循环或阻塞取出Handler发过来的消息:</p>
+<pre><code>//Looper.java
+public static void loop() &#123;
+    final Looper me = myLooper();
+    if (me == null) &#123;
+        throw new RuntimeException(&quot;No Looper; Looper.prepare() wasn&#39;t called on this thread.&quot;);
+    &#125;
+    final MessageQueue queue = me.mQueue;
+    //...
+    for (;;) &#123;
+        Message msg = queue.next(); // might block
+        if (msg == null) &#123;
+            // No message indicates that the message queue is quitting.
+            return;
+        &#125;
+        //...
+        msg.target.dispatchMessage(msg);
+        //...
+        msg.recycleUnchecked();//消息复用，通过Message.obtain()
+    &#125;
+&#125;
+</code></pre><p>当我们使用Handler发消息的时候，就会next()就会在特定的时刻收到消息并处理，发送消息就是往MessageQueue插入一条消息:</p>
+<pre><code>pulbic class MessageQueue &#123;
+
+    boolean enqueueMessage(Message msg, long when) &#123;
+          //...
+        synchronized (this) &#123;
+            //..
+            msg.when = when;
+            Message p = mMessages;//头
+            boolean needWake;
+            if (p == null || when == 0 || when &lt; p.when) &#123;
+                // New head, wake up the event queue if blocked.
+                msg.next = p;
+                mMessages = msg;
+                needWake = mBlocked;
+            &#125; else &#123;
+                // Inserted within the middle of the queue.  Usually we don&#39;t have to wake
+                // up the event queue unless there is a barrier at the head of the queue
+                // and the message is the earliest asynchronous message in the queue.
+                needWake = mBlocked &amp;&amp; p.target == null &amp;&amp; msg.isAsynchronous();
+                Message prev;
+                for (;;) &#123;
+                    prev = p;
+                    p = p.next;
+                    if (p == null || when &lt; p.when) &#123;
+                        break;
+                    &#125;
+                    if (needWake &amp;&amp; p.isAsynchronous()) &#123;
+                        needWake = false;
+                    &#125;
+                &#125;
+                msg.next = p; // invariant: p == prev.next
+                prev.next = msg;
+            &#125;
+
+            // We can assume mPtr != 0 because mQuitting is false.
+            if (needWake) &#123;
+                nativeWake(mPtr);
+            &#125;
+        &#125;
+        return true;
+    &#125;
+
+
+   Message next() &#123;
+    //...
+    int pendingIdleHandlerCount = -1; // -1 only during first iteration
+    int nextPollTimeoutMillis = 0;
+    for (;;) &#123;
+        if (nextPollTimeoutMillis != 0) &#123;
+            Binder.flushPendingCommands();
+        &#125;
+
+        nativePollOnce(ptr, nextPollTimeoutMillis);
+
+        synchronized (this) &#123;
+            // Try to retrieve the next message.  Return if found.
+            final long now = SystemClock.uptimeMillis();
+            Message prevMsg = null;
+            Message msg = mMessages;
+            if (msg != null &amp;&amp; msg.target == null) &#123;
+                // Stalled by a barrier.  Find the next asynchronous message in the queue.
+                do &#123;
+                    prevMsg = msg;
+                    msg = msg.next;
+                &#125; while (msg != null &amp;&amp; !msg.isAsynchronous());
+            &#125;
+            if (msg != null) &#123;
+                if (now &lt; msg.when) &#123;
+                    // Next message is not ready.  Set a timeout to wake up when it is ready.
+                    nextPollTimeoutMillis = (int) Math.min(msg.when - now, Integer.MAX_VALUE);
+                &#125; else &#123;
+                    // Got a message.
+                    mBlocked = false;
+                    if (prevMsg != null) &#123;
+                        prevMsg.next = msg.next;
+                    &#125; else &#123;
+                        mMessages = msg.next;
+                    &#125;
+                    msg.next = null;
+                    if (DEBUG) Log.v(TAG, &quot;Returning message: &quot; + msg);
+                    msg.markInUse();
+                    return msg;
+                &#125;
+            &#125; else &#123;
+                // No more messages.
+                nextPollTimeoutMillis = -1;
+            &#125;
+
+            //...
+
+            // If first time idle, then get the number of idlers to run.
+            // Idle handles only run if the queue is empty or if the first message
+            // in the queue (possibly a barrier) is due to be handled in the future.
+            if (pendingIdleHandlerCount &lt; 0
+                    &amp;&amp; (mMessages == null || now &lt; mMessages.when)) &#123;
+                pendingIdleHandlerCount = mIdleHandlers.size();
+            &#125;
+            if (pendingIdleHandlerCount &lt;= 0) &#123;
+                // No idle handlers to run.  Loop and wait some more.
+                mBlocked = true;
+                continue;
+            &#125;
+
+            if (mPendingIdleHandlers == null) &#123;
+                mPendingIdleHandlers = new IdleHandler[Math.max(pendingIdleHandlerCount, 4)];
+            &#125;
+            mPendingIdleHandlers = mIdleHandlers.toArray(mPendingIdleHandlers);
+        &#125;
+
+        // Run the idle handlers.
+        // We only ever reach this code block during the first iteration.
+        for (int i = 0; i &lt; pendingIdleHandlerCount; i++) &#123;
+            final IdleHandler idler = mPendingIdleHandlers[i];
+            mPendingIdleHandlers[i] = null; // release the reference to the handler
+
+            boolean keep = false;
+            try &#123;
+                keep = idler.queueIdle();
+            &#125; catch (Throwable t) &#123;
+                Log.wtf(TAG, &quot;IdleHandler threw exception&quot;, t);
+            &#125;
+
+            if (!keep) &#123;
+                synchronized (this) &#123;
+                    mIdleHandlers.remove(idler);
+                &#125;
+            &#125;
+        &#125;
+
+        // Reset the idle handler count to 0 so we do not run them again.
+        pendingIdleHandlerCount = 0;
+
+        // While calling an idle handler, a new message could have been delivered
+        // so go back and look again for a pending message without waiting.
+        nextPollTimeoutMillis = 0;
+    &#125;
+&#125;
+&#125;
+</code></pre><p>当我们调用next()获取的时候，不可能for里面一直循环获取，消息队列空闲的时候需要一种阻塞的机制等待消息的到来，Android2.2以前使用的是java线程里面的wait来实现的，Android 2.3以后就使用了linux管道加epoll的机制来实现，很多教程都没有详细的描述这个，强烈建议参考老罗的 <a target="_blank" rel="noopener" href="http://blog.csdn.net/luoshengyang/article/details/6817933">  Android应用程序消息处理机制（Looper、Handler）分析</a>。</p>
+<p>当消息队列处于空闲状态的情况下，可以向里面注册IdleHandler来执行空闲状态下的操作。当Looper.loop()里面获得消息就会调用Handler#dispatchMessage(msg)来分发消息:</p>
+<pre><code>public void dispatchMessage(Message msg) &#123;
+    if (msg.callback != null) &#123;
+        handleCallback(msg);
+    &#125; else &#123;
+        if (mCallback != null) &#123;
+            if (mCallback.handleMessage(msg)) &#123;
+                return;
+            &#125;
+        &#125;
+        handleMessage(msg);
+    &#125;
+&#125;
+</code></pre><p>我们可以在Handler的构造方法里面指定Hanlder.Callback来处理消息，就不用重写handleMessage(Message msg)方法了，并且可以决定是否向handleMessage(Message msg)里面分发。</p>
+<p>上面方法完整的过程:</p>
+<pre><code>final Handler mHandler;
+
+new Thread()&#123;
+
+    @Override
+    public void run() &#123;
+        Looper.prepare();
+        mHandler = new Handler()&#123;
+          @Override
+          public void handleMessage(Message msg) &#123;
+              //dosomething
+          &#125;
+
+        &#125;;
+        Looper.loop();
+    &#125;
+
+&#125;.start();
+
+mHandler.sendMessage(Message.obtain());
+</code></pre><h4 id="主线程的消息循环"><a href="#主线程的消息循环" class="headerlink" title="主线程的消息循环"></a>主线程的消息循环</h4><p>主线程ActivityThread默认带有Looper，并且不能结束，前面Activity,Service的启动流程中生命周期回调，都是通过ActivityManagerService向ActivityThread中的ApplicationThread发起IPC调用，由于ApplicationThread中的方法是在又是在Binder线程池里面执行，为了提高系统的并发性，使用Handler发送消息，消息的发送方只要把消息发送到应用程序的消息队列，它可以马上返回去处理别的事情(或者不处理)，而不需要等待消息的接收方去处理完这个消息才返回。</p>
+<pre><code>public class ActivityThread &#123;
+
+        public static void main(String[] args) &#123;
+            //...
+            Looper.prepareMainLooper();
+
+            ActivityThread thread = new ActivityThread();
+            thread.attach(false);
+
+            if (sMainThreadHandler == null) &#123;
+                sMainThreadHandler = thread.getHandler();
+            &#125;
+
+            Looper.loop();
+
+            throw new RuntimeException(&quot;Main thread loop unexpectedly exited&quot;);
+    &#125;
+&#125;
+</code></pre>
+
+
+
+</body>
+</html>

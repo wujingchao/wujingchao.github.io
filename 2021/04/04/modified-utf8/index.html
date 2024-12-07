@@ -1,0 +1,138 @@
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    
+<script src="/js/less.min.js"></script>
+
+    
+    
+<link rel="stylesheet" href="/css/main.css">
+
+    
+<link rel="stylesheet" href="/prettify/tomorrow.css">
+
+    
+<script src="/js/jquery-2.1.4.min.js"></script>
+
+    
+<script src="/js/raphael-min.js"></script>
+
+    
+<script src="/js/underscore-min.js"></script>
+
+    
+<script src="/js/sequence-diagram-min.js"></script>
+
+    
+<script src="/js/flowchart-latest.js"></script>
+
+    
+<script src="/prettify/prettify.js"></script>
+
+    
+<script src="/js/common.js"></script>
+
+    
+<script src="/js/gitment.browser.js"></script>
+
+    
+<link rel="stylesheet" href="/css/default.css">
+
+    
+<link rel="stylesheet" href="/lib/fancybox/dist/jquery.fancybox.css">
+
+
+    
+<script src="/lib/fancybox/dist/jquery.fancybox.js"></script>
+
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    
+    
+    <script>
+        (function (i, s, o, g, r, a, m) {
+            i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+                (i[r].q = i[r].q || []).push(arguments)
+            }, i[r].l = 1 * new Date(); a = s.createElement(o),
+                m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
+        })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+        ga('create', 'UA-71897482-1', 'auto');
+        ga('send', 'pageview');
+    </script>
+    
+    
+    <title>Java Modified UTF-8</title>
+    <meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=0.8, user-scalable=no">
+<meta name="generator" content="Hexo 6.3.0"></head>
+<body>
+
+<h3 id="Java-Modified-UTF-8"><a href="#Java-Modified-UTF-8" class="headerlink" title="Java Modified UTF-8"></a>Java Modified UTF-8</h3><h4 id="Unicode"><a href="#Unicode" class="headerlink" title="Unicode"></a>Unicode</h4><p>Unicode，官方中文名称为统一码，是计算机科学领域字符集的业界标准。它整理、编码了世界上大部分的文字系统，使得电脑可以用更为简单的方式来呈现和处理文字。 </p>
+<p>简单来说就是某一个文字或者符号，对应(映射)着一个整数值，范围为0x0000 ~ 0x1FFFF</p>
+<p>Unicode划分将字符集划分为17组，其中第一组为基本字符集（也叫基本多文种平面Basic Multilingual Plane）范围为0x0000 ~ 0xFFFF，包含了大部分国家常用的字符串和符号，其中0xD800 ~ 0xDFFF不映射字符，所以基本平面能够表示的字符个数为 (65536 - 2048)</p>
+<p>其余的字符集为增补字符集（也叫多文种补充平面Supplementary Multilingual Plane），范围为0x10000 ~ 0x1FFFFF</p>
+<p>所以Unicode的字符集个数为 2^17 - 2048 = 1112064</p>
+<h4 id="UTF-16"><a href="#UTF-16" class="headerlink" title="UTF-16"></a>UTF-16</h4><p>UTF-16是对Unicode的字符集的编码，Java的Char类型占用两个字节，用的就是UTF-16进行编码。对于基本字符集使用一个char就能够表示，比如：</p>
+<p>‘A’ 对于的二进制为： 0x00 0x41</p>
+<p>对于增补字符集，一个char表示不了，需要用两个char，但是对于每一个char的解析，我们需要知道它是落在了基本字符集里还是增补字符集里面，所以就需要一个类似转义的操作，由于基本字符集里的0xD800 ~ 0xDFFF是不映射字符的，可以用来转义。计算过程如下：</p>
+<p>扩展平面减去基本平面数量  0x10000 ~ 0x10FFFF - 0x10000 = 0x00000 ~ 0xFFFFF, 共20位，分别对前10位和后10位进行编码.</p>
+<p>0xD800 + 前10位   前两个字节，又叫高代理对(High Surrogate), 范围为0xD800 ~ 0xD8FF（0xD800 + 0x3FF）</p>
+<p>0xDC00 + 后10位   后两个子集，又叫低代理对(Low Surrogate)，范围为0xDC00 ~ 0xDFFF（0xDC00 + 0x3FF）</p>
+<p>例如’𠎠’字符，对应的Unicode码为 0x203A0，为增补字符集里面的字符，所以需要使用代理对进行编码：</p>
+<p>首先减去基本字符集的范围：<br>    0x203A0 - 0x10000 = 0x103A0， 对应的二进制位0001 0000 0011 1010 0000</p>
+<p>对前十位进行编码：<br>    0xD800 +  0100 0000 = 0xD800 + 0x40 = 0xD840</p>
+<p>对后十位进行编码<br>    0xDC00 +  11 1010 0000 = 0xDC00 + 0x3A0 = 0xDFA0</p>
+<p>所以编码后两个字符内容为：\uD840\uDFA0</p>
+<h4 id="Regular-UTF-8"><a href="#Regular-UTF-8" class="headerlink" title="Regular UTF-8"></a>Regular UTF-8</h4><p>UTF-8 同样是对Unicode字符集的编码，不过他使用变长的规则进行编码，对于大部分基本字符集里面的汉字字符，需要3个字节进行编码，但是对于英文字符ASCII，只需要一个字节。</p>
+<p>编码规则如下：</p>
+<p>对于与范围为0x00 ~ 0x7F的Uicode码: 0XXXXXXX</p>
+<p>对于超过0x7F的字符，使用变长的规则,低位均为10开头，从第二位位后面到0之间1的个数就是后面字节的个数</p>
+<p>0x7F  ~ 0x7FF     110XXXXX 10XXXXXX</p>
+<p>0x800 ~ 0xFFFF    1110XXXX 10XXXXXX 10XXXXXX</p>
+<p>0x10000 ~ 0x10FFFF 11110XXX 10XXXXXX 10XXXXXX 10XXXXXX</p>
+<p>例如字符’A’ 对于的编码为 0x41</p>
+<p>字符’𠎠’对于的编码：</p>
+<p>0x203A0落在区间0x10000 ~ 0x10FFFF，对于的二进制为0010 0000 0011 1010 0000,将位填入上面的占位符(X)得到：</p>
+<p>1111 0000 1010 0000 1000 1110 1010 0000 即 0xF0 0xA0 0x8E 0xA0</p>
+<h4 id="Modified-UTF-8"><a href="#Modified-UTF-8" class="headerlink" title="Modified UTF-8"></a>Modified UTF-8</h4><p>Modified UTF-8对UTF-8做了一些修改，起源于Java，java.io.DataInput里有对其描述(<a target="_blank" rel="noopener" href="https://developer.android.com/reference/java/io/DataInput),区别主要有：">https://developer.android.com/reference/java/io/DataInput),区别主要有：</a></p>
+<ul>
+<li><p>对0号Unicode的处理，0号字符又叫null character，在C语言里面用于结束字符串标识，正常的UTF-8只需要一个字节表示，而Modified UTF-8需要用两个字节对\u0000进行编码，对应的二进制位11000000 10000000，即0xC080，所以Modified UTF-8里不会出现单个字节的null character，所以可以使用null character作为字符串的结尾，这对于C标准库里面的很多函数很有用。另外Java里面的字符串并没有结束符，需要能够正常的处理u/0000的字符</p>
+</li>
+<li><p>只使用1，2，3字节的格式，即 0XXXXXXX |  110XXXXX 10XXXXXX | 1110XXXX 10XXXXXX 10XXXXXX</p>
+</li>
+<li><p>只使用1，2，3字节格式来编码，那么对于增补字符集，分别对UTF-16的高代理对于低代理对进行UTF-8编码，就可以得到6字节长度。（区别于标准UTF8，直接使用Unicode码进行）</p>
+</li>
+</ul>
+<p>继续使用增补字符集的字符’𠎠’示例：</p>
+<p>从上面可以知道UTF-16的高代理对于低代理对字节为： \uD840 \uDFA0</p>
+<p>分别对0xD840与0xDFA0进行UTF-8编码</p>
+<p>0xD840 对于二进制 1101 1000 0100 0000</p>
+<p>0xDFA0 对于二进制 1101 1111 1010 0000</p>
+<p>对高代理对进行编码 得到 11101101  10100001 10000000 即 0xED 0xA1 0x80</p>
+<p>对低代理对进行编码得到  11101101  10111110 10100000 即 0xED 0xBE 0xA0</p>
+<p>所以最终得到的编码内容为 0xED 0xA1 0xBD 0xED 0xB8 0x88</p>
+<p>Modified UTF-8主要用在了两个地方：</p>
+<ul>
+<li><p>class文件的Utf8常量项字符格式，这样当虚拟机解析字面量不用对增补字符集做另外的代理对转换处理</p>
+</li>
+<li><p>另一个地方就是JNI的GetStringChars函数</p>
+</li>
+</ul>
+<pre><code>GetStringUTFChars
+
+const char * GetStringUTFChars(JNIEnv *env, jstring string,
+jboolean *isCopy);
+
+Returns a pointer to an array of bytes representing the string in modified UTF-8 encoding
+</code></pre><p>但是对于增补字符集，在Android R上测试了这个函数，’𠎠’字符得到的是用Unicode进行UTF8编码的，并不是使用代理对处理的Modified UTF-8：</p>
+<p>11100000 10100000 10001110 10100000 即 0xF0 0xA0 0x8E 0xA0</p>
+<p>查了下，很早的版本就有人反馈这个现象 <a target="_blank" rel="noopener" href="https://github.com/android/ndk/issues/283">https://github.com/android/ndk/issues/283</a></p>
+<p>但是文档或者实现都没有改，所以涉及到JNI使用UTF-8处理增补字符集的时候，需要留意下有没有问题。</p>
+
+
+
+
+</body>
+</html>

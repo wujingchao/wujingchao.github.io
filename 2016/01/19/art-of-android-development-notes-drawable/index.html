@@ -1,0 +1,306 @@
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    
+<script src="/js/less.min.js"></script>
+
+    
+    
+<link rel="stylesheet" href="/css/main.css">
+
+    
+<link rel="stylesheet" href="/prettify/tomorrow.css">
+
+    
+<script src="/js/jquery-2.1.4.min.js"></script>
+
+    
+<script src="/js/raphael-min.js"></script>
+
+    
+<script src="/js/underscore-min.js"></script>
+
+    
+<script src="/js/sequence-diagram-min.js"></script>
+
+    
+<script src="/js/flowchart-latest.js"></script>
+
+    
+<script src="/prettify/prettify.js"></script>
+
+    
+<script src="/js/common.js"></script>
+
+    
+<script src="/js/gitment.browser.js"></script>
+
+    
+<link rel="stylesheet" href="/css/default.css">
+
+    
+<link rel="stylesheet" href="/lib/fancybox/dist/jquery.fancybox.css">
+
+
+    
+<script src="/lib/fancybox/dist/jquery.fancybox.js"></script>
+
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    
+    
+    <script>
+        (function (i, s, o, g, r, a, m) {
+            i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+                (i[r].q = i[r].q || []).push(arguments)
+            }, i[r].l = 1 * new Date(); a = s.createElement(o),
+                m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
+        })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+        ga('create', 'UA-71897482-1', 'auto');
+        ga('send', 'pageview');
+    </script>
+    
+    
+    <title>读书笔记:Android的Drawable</title>
+    <meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=0.8, user-scalable=no">
+<meta name="generator" content="Hexo 6.3.0"></head>
+<body>
+
+<h3 id="Android开发艺术探索-Android的Drawable"><a href="#Android开发艺术探索-Android的Drawable" class="headerlink" title="Android开发艺术探索:Android的Drawable"></a><a target="_blank" rel="noopener" href="http://www.amazon.cn/Android%E5%BC%80%E5%8F%91%E8%89%BA%E6%9C%AF%E6%8E%A2%E7%B4%A2-%E4%BB%BB%E7%8E%89%E5%88%9A/dp/B014HV1X3K/ref=sr_1_1?ie=UTF8&amp;qid=1451616304&amp;sr=8-1&amp;keywords=Android%E5%BC%80%E5%8F%91%E8%89%BA%E6%9C%AF%E6%8E%A2%E7%B4%A2">Android开发艺术探索</a>:Android的Drawable</h3><p>自定Drawable比自定义View的成本要低，使用非图片类型的Drawable有利于减少apk的体积。<br>可以通过 getIntrinsicWidth 和 getIntrinsicHeight 可已获取Drawable的内部宽高，并不是所有的Drawable都有内部宽高，例如ColorDrawable。</p>
+<h4 id="Drawable的分类"><a href="#Drawable的分类" class="headerlink" title="Drawable的分类"></a>Drawable的分类</h4><p>1.BitmapDrawable</p>
+<pre><code class="xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+&lt;bitmap
+    xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;
+    android:src=&quot;@[package:]drawable/drawable_resource&quot;
+    android:antialias=[&quot;true&quot; | &quot;false&quot;]
+    android:dither=[&quot;true&quot; | &quot;false&quot;]
+    android:filter=[&quot;true&quot; | &quot;false&quot;]
+    android:gravity=[&quot;top&quot; | &quot;bottom&quot; | &quot;left&quot; | &quot;right&quot; | &quot;center_vertical&quot; |
+                      &quot;fill_vertical&quot; | &quot;center_horizontal&quot; | &quot;fill_horizontal&quot; |
+                      &quot;center&quot; | &quot;fill&quot; | &quot;clip_vertical&quot; | &quot;clip_horizontal&quot;]
+    android:mipMap=[&quot;true&quot; | &quot;false&quot;]
+    android:tileMode=[&quot;disabled&quot; | &quot;clamp&quot; | &quot;repeat&quot; | &quot;mirror&quot;] /&gt;
+</code></pre>
+<ul>
+<li>android:antialias 抗锯齿，开启之后会让图片变得平滑，虽然会降低一定的清晰度，应该开启。</li>
+<li>android:dither 抖动效果，让高质量的图片在低质量的屏幕上保持较好的显示效果，防止过于失真，应该开启。</li>
+<li>android:filter 过滤效果，当图片尺寸被拉伸或者压缩的时候，开启可以保持较好的显示效果，应该开启。</li>
+<li>android:tileMode 平铺模式。</li>
+</ul>
+<p>2.NinePatchDrawable</p>
+<pre><code class="xml">&lt;nine-patch
+    xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;
+    android:src=&quot;@[package:]drawable/drawable_resource&quot;
+    android:dither=[&quot;true&quot; | &quot;false&quot;] /&gt;
+</code></pre>
+<p>.9格式的图片</p>
+<p>3.ShapeDrawable</p>
+<pre><code class="xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+&lt;shape
+    xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;
+    android:shape=[&quot;rectangle&quot; | &quot;oval&quot; | &quot;line&quot; | &quot;ring&quot;] &gt;
+    &lt;corners
+        android:radius=&quot;integer&quot;
+        android:topLeftRadius=&quot;integer&quot;
+        android:topRightRadius=&quot;integer&quot;
+        android:bottomLeftRadius=&quot;integer&quot;
+        android:bottomRightRadius=&quot;integer&quot; /&gt;
+    &lt;gradient
+        android:angle=&quot;integer&quot;
+        android:centerX=&quot;integer&quot;
+        android:centerY=&quot;integer&quot;
+        android:centerColor=&quot;integer&quot;
+        android:endColor=&quot;color&quot;
+        android:gradientRadius=&quot;integer&quot;
+        android:startColor=&quot;color&quot;
+        android:type=[&quot;linear&quot; | &quot;radial&quot; | &quot;sweep&quot;]
+        android:useLevel=[&quot;true&quot; | &quot;false&quot;] /&gt;
+    &lt;padding
+        android:left=&quot;integer&quot;
+        android:top=&quot;integer&quot;
+        android:right=&quot;integer&quot;
+        android:bottom=&quot;integer&quot; /&gt;
+    &lt;size
+        android:width=&quot;integer&quot;
+        android:height=&quot;integer&quot; /&gt;
+    &lt;solid
+        android:color=&quot;color&quot; /&gt;
+    &lt;stroke
+        android:width=&quot;integer&quot;
+        android:color=&quot;color&quot;
+        android:dashWidth=&quot;integer&quot;
+        android:dashGap=&quot;integer&quot; /&gt;
+&lt;/shape&gt;
+</code></pre>
+<ul>
+<li>solide 纯色填充</li>
+<li>gradient 渐变填充</li>
+<li>stroke 描边</li>
+<li>size 设置的就是Drawable的固定宽高，getIntrinsicWidth 和 getIntrinsicHeight 方式获取的，但当View做为背景Drawable还是会拉伸或者缩小为View的大小。(固定宽高还是不变)</li>
+</ul>
+<p>4.LayerDrawable</p>
+<pre><code class="xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+&lt;layer-list
+    xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot; &gt;
+    &lt;item
+        android:drawable=&quot;@[package:]drawable/drawable_resource&quot;
+        android:id=&quot;@[+][package:]id/resource_name&quot;
+        android:top=&quot;dimension&quot;
+        android:right=&quot;dimension&quot;
+        android:bottom=&quot;dimension&quot;
+        android:left=&quot;dimension&quot; /&gt;
+&lt;/layer-list&gt;
+</code></pre>
+<p>多个Drawable叠加效果</p>
+<p>5.StateListDrawable</p>
+<pre><code class="xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+&lt;selector xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;
+    android:constantSize=[&quot;true&quot; | &quot;false&quot;]
+    android:dither=[&quot;true&quot; | &quot;false&quot;]
+    android:variablePadding=[&quot;true&quot; | &quot;false&quot;] &gt;
+    &lt;item
+        android:drawable=&quot;@[package:]drawable/drawable_resource&quot;
+        android:state_pressed=[&quot;true&quot; | &quot;false&quot;]
+        android:state_focused=[&quot;true&quot; | &quot;false&quot;]
+        android:state_hovered=[&quot;true&quot; | &quot;false&quot;]
+        android:state_selected=[&quot;true&quot; | &quot;false&quot;]
+        android:state_checkable=[&quot;true&quot; | &quot;false&quot;]
+        android:state_checked=[&quot;true&quot; | &quot;false&quot;]
+        android:state_enabled=[&quot;true&quot; | &quot;false&quot;]
+        android:state_activated=[&quot;true&quot; | &quot;false&quot;]
+        android:state_window_focused=[&quot;true&quot; | &quot;false&quot;] /&gt;
+&lt;/selector&gt;
+</code></pre>
+<p>Drawable集合，不同的状态显示不同的View</p>
+<p>6.LevelListDrawable</p>
+<pre><code class="xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+&lt;level-list
+    xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot; &gt;
+    &lt;item
+        android:drawable=&quot;@drawable/drawable_resource&quot;
+        android:maxLevel=&quot;integer&quot;
+        android:minLevel=&quot;integer&quot; /&gt;
+&lt;/level-list&gt;
+</code></pre>
+<p>Drawable集合，每个Drawable都有一个Level，根据不同的等级，LevelListDrawable会切换显示对应的Drawable。</p>
+<p>7.TransitionDrawable</p>
+<pre><code class="xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+&lt;transition
+xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot; &gt;
+    &lt;item
+        android:drawable=&quot;@[package:]drawable/drawable_resource&quot;
+        android:id=&quot;@[+][package:]id/resource_name&quot;
+        android:top=&quot;dimension&quot;
+        android:right=&quot;dimension&quot;
+        android:bottom=&quot;dimension&quot;
+        android:left=&quot;dimension&quot; /&gt;
+&lt;/transition&gt;
+</code></pre>
+<p>用于两个Drawable之间淡入淡出的效果，需要调用 startTransition reverseTransition:</p>
+<pre><code class="java">ImageButton button = (ImageButton) findViewById(R.id.button);
+TransitionDrawable drawable = (TransitionDrawable) button.getDrawable();
+drawable.startTransition(500);
+</code></pre>
+<p>8.InsetDrawable</p>
+<pre><code class="xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+&lt;inset
+    xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;
+    android:drawable=&quot;@drawable/drawable_resource&quot;
+    android:insetTop=&quot;dimension&quot;
+    android:insetRight=&quot;dimension&quot;
+    android:insetBottom=&quot;dimension&quot;
+    android:insetLeft=&quot;dimension&quot; /&gt;
+</code></pre>
+<blockquote>
+<p>A drawable defined in XML that insets another drawable by a specified distance. This is useful when a View needs a background that is smaller than the View’s actual bounds.</p>
+</blockquote>
+<p>9.ScaleDrawble</p>
+<pre><code class="xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+&lt;scale
+    xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;
+    android:drawable=&quot;@drawable/drawable_resource&quot;
+    android:scaleGravity=[&quot;top&quot; | &quot;bottom&quot; | &quot;left&quot; | &quot;right&quot; | &quot;center_vertical&quot; |
+                          &quot;fill_vertical&quot; | &quot;center_horizontal&quot; | &quot;fill_horizontal&quot; |
+                          &quot;center&quot; | &quot;fill&quot; | &quot;clip_vertical&quot; | &quot;clip_horizontal&quot;]
+    android:scaleHeight=&quot;percentage&quot;
+    android:scaleWidth=&quot;percentage&quot; /&gt;
+</code></pre>
+<p>根据自己的level(默认是0)将指定的Drawable缩放到一定比例。</p>
+<pre><code class="java">View scaleView = findViewById(R.id.scale);
+ScaleDrawable scaleDrawable = scaleView.getBackground();
+scaleDrawable.setLevel(1);
+</code></pre>
+<p>10.ClipDrawable</p>
+<pre><code class="xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+&lt;clip
+    xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;
+    android:drawable=&quot;@drawable/drawable_resource&quot;
+    android:clipOrientation=[&quot;horizontal&quot; | &quot;vertical&quot;]
+    android:gravity=[&quot;top&quot; | &quot;bottom&quot; | &quot;left&quot; | &quot;right&quot; | &quot;center_vertical&quot; |
+                     &quot;fill_vertical&quot; | &quot;center_horizontal&quot; | &quot;fill_horizontal&quot; |
+                     &quot;center&quot; | &quot;fill&quot; | &quot;clip_vertical&quot; | &quot;clip_horizontal&quot;] /&gt;
+</code></pre>
+<p>根据当前的level剪裁另一个Drawable</p>
+<pre><code class="java">ImageView imageview = (ImageView) findViewById(R.id.image);
+ClipDrawable drawable = (ClipDrawable) imageview.getDrawable();
+drawable.setLevel(drawable.getLevel() + 1000);
+</code></pre>
+<h4 id="自定义Drawable"><a href="#自定义Drawable" class="headerlink" title="自定义Drawable"></a>自定义Drawable</h4><p>主要有两个用途:ImageView的图像显示和View的背景。</p>
+<p>Drawable书中的示例代码:</p>
+<pre><code class="java">public class CustomDrawable extends Drawable &#123;
+    private Paint mPaint;
+
+    public CustomDrawable(int color) &#123;
+        mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        mPaint.setColor(color);
+    &#125;
+
+    @Override
+    public void draw(Canvas canvas) &#123;
+        final Rect r = getBounds();//获取实际区域大小，一般和View的尺寸相同
+        float cx = r.exactCenterX();
+        float cy = r.exactCenterY();
+        canvas.drawCircle(cx, cy, Math.min(cx, cy), mPaint);
+    &#125;
+
+    @Override
+    public void setAlpha(int alpha) &#123;
+        mPaint.setAlpha(alpha);
+        invalidateSelf();
+
+    &#125;
+
+    @Override
+    public void setColorFilter(ColorFilter cf) &#123;
+        mPaint.setColorFilter(cf);
+        invalidateSelf();
+    &#125;
+
+    @Override
+    public int getOpacity() &#123;
+        // not sure, so be safe
+        return PixelFormat.TRANSLUCENT;
+    &#125;
+
+        //用与给View使用wrap_content的时候提供下尺寸
+    @Override
+    public int getIntrinsicHeight() &#123;
+        return super.getIntrinsicHeight();
+    &#125;
+
+    @Override
+    public int getIntrinsicWidth() &#123;
+        return super.getIntrinsicWidth();
+    &#125;
+
+&#125;
+</code></pre>
+
+
+
+
+</body>
+</html>

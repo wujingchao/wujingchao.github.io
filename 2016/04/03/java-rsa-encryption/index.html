@@ -1,0 +1,136 @@
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    
+<script src="/js/less.min.js"></script>
+
+    
+    
+<link rel="stylesheet" href="/css/main.css">
+
+    
+<link rel="stylesheet" href="/prettify/tomorrow.css">
+
+    
+<script src="/js/jquery-2.1.4.min.js"></script>
+
+    
+<script src="/js/raphael-min.js"></script>
+
+    
+<script src="/js/underscore-min.js"></script>
+
+    
+<script src="/js/sequence-diagram-min.js"></script>
+
+    
+<script src="/js/flowchart-latest.js"></script>
+
+    
+<script src="/prettify/prettify.js"></script>
+
+    
+<script src="/js/common.js"></script>
+
+    
+<script src="/js/gitment.browser.js"></script>
+
+    
+<link rel="stylesheet" href="/css/default.css">
+
+    
+<link rel="stylesheet" href="/lib/fancybox/dist/jquery.fancybox.css">
+
+
+    
+<script src="/lib/fancybox/dist/jquery.fancybox.js"></script>
+
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    
+    
+    <script>
+        (function (i, s, o, g, r, a, m) {
+            i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+                (i[r].q = i[r].q || []).push(arguments)
+            }, i[r].l = 1 * new Date(); a = s.createElement(o),
+                m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
+        })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+        ga('create', 'UA-71897482-1', 'auto');
+        ga('send', 'pageview');
+    </script>
+    
+    
+    <title>Java使用模数、公钥指数、私钥指数进行RSA加解密</title>
+    <meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=0.8, user-scalable=no">
+<meta name="generator" content="Hexo 6.3.0"></head>
+<body>
+
+<h3 id="Java使用模数、公钥指数、私钥指数进行RSA加解密"><a href="#Java使用模数、公钥指数、私钥指数进行RSA加解密" class="headerlink" title="Java使用模数、公钥指数、私钥指数进行RSA加解密"></a>Java使用模数、公钥指数、私钥指数进行RSA加解密</h3><p>关于模数n、公钥指数e、私钥指数d的相关概念推荐阮老师的这两篇文章。</p>
+<p><a target="_blank" rel="noopener" href="http://www.ruanyifeng.com/blog/2013/06/rsa_algorithm_part_one.html">RSA算法原理（一）</a><br><a target="_blank" rel="noopener" href="http://www.ruanyifeng.com/blog/2013/07/rsa_algorithm_part_two.html">RSA算法原理（二）</a></p>
+<p>简单说一下，模数n就是随机选取的两个质数p,q的乘积，并且n的长度就是秘钥的长度。根据欧拉函数，得到</p>
+<pre><code>    φ(n) = (p-1)(q-1)。
+</code></pre><p>公钥钥指数e随机选取，与φ(n)互质，通常为65537。然后根据　</p>
+<pre><code>    ed ≡ 1 (mod φ(n)) //等价于ed - 1 = kφ(n)
+</code></pre><p>计算e对于φ(n)的反模元素d，即得到私钥指数d。</p>
+<p>(n,e)就作为公钥，对数据进行加密，(n,d)就作为私钥，对数据进行解密。</p>
+<p>根据公钥(n,e)来推导私钥(n,d)的步骤:<br>对这个方程求解 ed - 1 = kφ(n)，这个方程已知的参数为e，想要计算出d，就需要知道φ(n)。<br>想要知道φ(n)就需要知道p和q。想要知道p和q就需要对n进行因数分解，所以<strong>对大整数n的因数分解难度决定了RSA算法的可靠性</strong>。</p>
+<blockquote>
+<p>给出两个大数很容易将他们相乘，但是给出他们的乘积找出因子就不是那么容易了。 – Wikipedia</p>
+</blockquote>
+<p>先来看一下怎么生成模数、公钥指数和私钥指数:</p>
+<pre><code>KeyPairGenerator generator = KeyPairGenerator.getInstance(&quot;RSA&quot;);
+generator.initialize(1024);
+KeyPair pair = generator.generateKeyPair();
+RSAPrivateKey privateKey = (RSAPrivateKey) pair.getPrivate();
+RSAPublicKey publicKey = (RSAPublicKey) pair.getPublic();
+
+println(&quot;publicKey exponent:&quot; + publicKey.getPublicExponent());
+println(&quot;publicKey modules:&quot; + publicKey.getModulus());
+println(&quot;publicKey format:&quot; + publicKey.getFormat());
+
+println(&quot;---------------------华丽的分割线-------------------------&quot;);
+
+println(&quot;privateKey exponent:&quot; + privateKey.getPrivateExponent());
+println(&quot;privateKey modules:&quot; +  privateKey.getModulus());
+println(&quot;privateKey format:&quot; + privateKey.getFormat());
+</code></pre><p>打印结果:</p>
+<pre><code>publicKey exponent:65537
+publicKey modules:154471992999058139479994460025815654498183391593444870454838266974581244599191659985455957889064163942388409487313472074598227824609910604156744751985833898809065078785899074110993629452358669379496163284362583792866500058660069050752020922895749548342185553141417346777273482310707415185758164008066298773949
+publicKey format:X.509
+---------------------华丽的分割线-------------------------
+privateKey exponent:24953766420205815381764520016071994967304996670579990593182061010725111564027070269710579156377653900210050677360692873548856950717077735724971492275722465522175892883197573916804276397143284954594245180776141869860033925480138858143033802945465036705957639063440190950861284456594945244826689811470380537909
+privateKey modules:154471992999058139479994460025815654498183391593444870454838266974581244599191659985455957889064163942388409487313472074598227824609910604156744751985833898809065078785899074110993629452358669379496163284362583792866500058660069050752020922895749548342185553141417346777273482310707415185758164008066298773949
+privateKey format:PKCS#8
+</code></pre><p>然后就可以保存结果，下面是加解密的过程：</p>
+<pre><code>//公钥加密
+KeyFactory keyFactory = KeyFactory.getInstance(&quot;RSA&quot;);
+BigInteger modulus = new BigInteger(&quot;154471992999058139479994460025815654498183391593444870454838266974581244599191659985455957889064163942388409487313472074598227824609910604156744751985833898809065078785899074110993629452358669379496163284362583792866500058660069050752020922895749548342185553141417346777273482310707415185758164008066298773949&quot;,10);
+BigInteger publicExponent = new BigInteger(&quot;65537&quot;);
+RSAPublicKeySpec rsaPublicKeySpec = new RSAPublicKeySpec(modulus,publicExponent);
+PublicKey publicKey = keyFactory.generatePublic(rsaPublicKeySpec);
+
+Cipher cipher = Cipher.getInstance(&quot;RSA&quot;);
+cipher.init(Cipher.ENCRYPT_MODE,publicKey);
+byte[]  encryptData = cipher.doFinal(&quot;Hello,RSA!&quot;.getBytes());
+
+
+//私钥解密
+BigInteger privateExponent = new BigInteger(&quot;24953766420205815381764520016071994967304996670579990593182061010725111564027070269710579156377653900210050677360692873548856950717077735724971492275722465522175892883197573916804276397143284954594245180776141869860033925480138858143033802945465036705957639063440190950861284456594945244826689811470380537909&quot;,10);
+RSAPrivateKeySpec rsaPrivateKeySpec = new RSAPrivateKeySpec(modulus,privateExponent);
+PrivateKey privateKey = keyFactory.generatePrivate(rsaPrivateKeySpec);
+cipher.init(Cipher.DECRYPT_MODE,privateKey);
+byte[] decryptData = cipher.doFinal(encryptData);
+println(&quot;decryptData:&quot; + new String(decryptData));
+</code></pre><p>打印结果:</p>
+<pre><code>decryptData:Hello,RSA!
+</code></pre><p>题外：另外需要注意的一点是Cipher这个实例是有状态的，所以不是线程安全的。<a target="_blank" rel="noopener" href="http://stackoverflow.com/questions/6957406/is-cipher-thread-safe">is-cipher-thread-safe?</a></p>
+
+
+
+
+</body>
+</html>

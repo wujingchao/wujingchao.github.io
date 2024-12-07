@@ -1,0 +1,381 @@
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    
+<script src="/js/less.min.js"></script>
+
+    
+    
+<link rel="stylesheet" href="/css/main.css">
+
+    
+<link rel="stylesheet" href="/prettify/tomorrow.css">
+
+    
+<script src="/js/jquery-2.1.4.min.js"></script>
+
+    
+<script src="/js/raphael-min.js"></script>
+
+    
+<script src="/js/underscore-min.js"></script>
+
+    
+<script src="/js/sequence-diagram-min.js"></script>
+
+    
+<script src="/js/flowchart-latest.js"></script>
+
+    
+<script src="/prettify/prettify.js"></script>
+
+    
+<script src="/js/common.js"></script>
+
+    
+<script src="/js/gitment.browser.js"></script>
+
+    
+<link rel="stylesheet" href="/css/default.css">
+
+    
+<link rel="stylesheet" href="/lib/fancybox/dist/jquery.fancybox.css">
+
+
+    
+<script src="/lib/fancybox/dist/jquery.fancybox.js"></script>
+
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    
+    
+    <script>
+        (function (i, s, o, g, r, a, m) {
+            i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+                (i[r].q = i[r].q || []).push(arguments)
+            }, i[r].l = 1 * new Date(); a = s.createElement(o),
+                m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
+        })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+        ga('create', 'UA-71897482-1', 'auto');
+        ga('send', 'pageview');
+    </script>
+    
+    
+    <title>使用数字电路的基础逻辑门搭建计算机</title>
+    <meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=0.8, user-scalable=no">
+<meta name="generator" content="Hexo 6.3.0"></head>
+<body>
+
+<h3 id="使用数字电路的基础逻辑门搭建计算机"><a href="#使用数字电路的基础逻辑门搭建计算机" class="headerlink" title="使用数字电路的基础逻辑门搭建计算机"></a>使用数字电路的基础逻辑门搭建计算机</h3><blockquote>
+<p>逻辑门（Logic Gates)是在集成电路(Integrated Circuit)上的基本组件。简单的逻辑门可由晶体管组成。这些晶体管的组合可以使代表两种信号的高低电平在通过它们之后产生高电平或者低电平的信号。高、低电平可以分别代表逻辑上的“真”与“假”或二进制当中的1和0，从而实现逻辑运算。</p>
+</blockquote>
+<p>此外，逻辑门也可以使用继电器实现，早期的计算机就是使用它来完成的。</p>
+<h4 id="基础逻辑门"><a href="#基础逻辑门" class="headerlink" title="基础逻辑门"></a>基础逻辑门</h4><p>先介绍基本的逻辑门，并附上它们的真值表，虽然很简单，但是计算机复杂的功能都是由这些简单的逻辑门组成的。</p>
+<h5 id="与门（AND-Gate）"><a href="#与门（AND-Gate）" class="headerlink" title="与门（AND Gate）"></a>与门（AND Gate）</h5><p>与门</p>
+<table>
+<thead>
+<tr>
+<th>A</th>
+<th>B</th>
+<th>out</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+</tr>
+<tr>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+<p>即只有同时输入都为真是，输出才为真，门里面的真假值是使用高低电平来表示的，例如0V为低电平表示假，5V为高电平表示为真， A，B表示输入，out表示输出。</p>
+<h5 id="或门（OR-Gate）"><a href="#或门（OR-Gate）" class="headerlink" title="或门（OR Gate）"></a>或门（OR Gate）</h5><p><img src="/assets/or_gate.png" alt="或门"></p>
+<table>
+<thead>
+<tr>
+<th>A</th>
+<th>B</th>
+<th>out</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<td>0</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+</tr>
+<tr>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+<p>即有一个为真，输出就为真。</p>
+<h5 id="非门（NOT-Gate）"><a href="#非门（NOT-Gate）" class="headerlink" title="非门（NOT Gate）"></a>非门（NOT Gate）</h5><p><img src="/assets/not_gate.png" alt="非门"></p>
+<table>
+<thead>
+<tr>
+<th>A</th>
+<th>out</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>1</td>
+</tr>
+<tr>
+<td>1</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+<p>即输入与输出相反</p>
+<p>其实到这里，逻辑基本的门就已经介绍完了，剩下的门只不过这三种门的组合。</p>
+<h5 id="或非门（NOR-Gate）"><a href="#或非门（NOR-Gate）" class="headerlink" title="或非门（NOR Gate）"></a>或非门（NOR Gate）</h5><p><img src="/assets/nor_gate.png" alt="或非门"></p>
+<table>
+<thead>
+<tr>
+<th>A</th>
+<th>B</th>
+<th>out</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+</tr>
+<tr>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+</tr>
+<tr>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<td>1</td>
+<td>1</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+<p>由或门，非门组成，只有两个输入都为假时，输入才为真。</p>
+<h5 id="与非门（NAND-Gate）"><a href="#与非门（NAND-Gate）" class="headerlink" title="与非门（NAND Gate）"></a>与非门（NAND Gate）</h5><p><img src="/assets/nand_gate.png" alt="与非门"></p>
+<table>
+<thead>
+<tr>
+<th>A</th>
+<th>B</th>
+<th>out</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+</tr>
+<tr>
+<td>0</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+</tr>
+<tr>
+<td>1</td>
+<td>1</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+<p>由与门，非门组成，只有两个输入都为真时，输出才为假。</p>
+<h5 id="异或门（XOR-Gate）"><a href="#异或门（XOR-Gate）" class="headerlink" title="异或门（XOR Gate）"></a>异或门（XOR Gate）</h5><p><img src="/assets/xor_gate.png" alt="异或门1"></p>
+<table>
+<thead>
+<tr>
+<th>A</th>
+<th>B</th>
+<th>out</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<td>0</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+</tr>
+<tr>
+<td>1</td>
+<td>1</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+<p>异或门由或门，与非门，与门组成，有特定的电气符号：</p>
+<p><img src="/assets/and_gate2.png" alt="异或门2"></p>
+<h4 id="二进制加法器"><a href="#二进制加法器" class="headerlink" title="二进制加法器"></a>二进制加法器</h4><p>利用上面介绍的基础逻辑门，就可以实现二进制加法器，先来看一下一位的二进制加法器怎么实现。<br>一位二进制加法很简单，可以将结果分为进位位与加和输出为：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">a</th>
+<th style="text-align:center">b</th>
+<th style="text-align:center">加和位</th>
+<th style="text-align:center">进位</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">0</td>
+<td style="text-align:center">0</td>
+<td style="text-align:center">0</td>
+<td style="text-align:center">0</td>
+</tr>
+<tr>
+<td style="text-align:center">0</td>
+<td style="text-align:center">1</td>
+<td style="text-align:center">1</td>
+<td style="text-align:center">0</td>
+</tr>
+<tr>
+<td style="text-align:center">1</td>
+<td style="text-align:center">0</td>
+<td style="text-align:center">1</td>
+<td style="text-align:center">0</td>
+</tr>
+<tr>
+<td style="text-align:center">1</td>
+<td style="text-align:center">1</td>
+<td style="text-align:center">0</td>
+<td style="text-align:center">1</td>
+</tr>
+</tbody>
+</table>
+<p>观察加和位的输出与进位的输出，加和位可以使用异或门来实现，进位可以使用与门来实现，将这两个门连接在一起就是这个样子：</p>
+<p><img src="/assets/half_plus1.png" alt="半加器1"></p>
+<p>刚好和上面的真值表的输出一致。</p>
+<p>这个被称为半加器，因为大多数二进制加法都是多于一位的，要考虑其低位的进位。</p>
+<p>为了简单，简化的半加器的符号：</p>
+<p><img src="/assets/half_plus2.png" alt="半加器2"></p>
+<p>利用两个半加器就可以组成一个全加器：</p>
+<p><img src="/assets/full_plus1.png" alt="全加器1"></p>
+<p>为了简单，简化的全加器的符号：</p>
+<p><img src="/assets/full_plus2.png" alt="全加器2"></p>
+<p>得到了这全加器，很容易就可以扩展二进制加法器的位数8位，16位，32位….例如扩展为8位，8个全加器“串联”在一起即可，每一位的进位输出是下一位的进位输入。下图表示8位的加法器图示：</p>
+<p><img src="/assets/8_bit_plus.png" alt="8位加法器"></p>
+<h4 id="二进制减法的实现"><a href="#二进制减法的实现" class="headerlink" title="二进制减法的实现"></a>二进制减法的实现</h4><p>由于二进制的减法涉及借位复杂的操作，实现起来电路较为复杂，通常是利用加法来实现，没错了，就是利用将减数求补码与被减数相加来实现，可以将符号位与数值域统一处理。下面介绍实现的原理。</p>
+<pre><code>求253-176的运算结果：
+
+  1111 1101 - 1011 0000
+= 1111 1101 - 1011 0000 + 1 0000 0000 - 1 0000 0000
+= 1111 1101 - 1011 0000 + 1111 1111 + 1 - 1 0000 0000
+= 1111 1101 + (1111 1111 - 1011 0000 + 1) - 1 0000 0000
+//被括弧的这个式子就是176的补码
+= 1111 1101 + 0100 1111 + 1 - 1 0000 0000
+//其实加法器只做到了这一步，进位后最高为溢出，剩下的就是我们想要的结果
+= 1 0100 1101 - 1 0000 0000
+= 0100 1101
+
+</code></pre><p>所以我们只需要在原来加法器的基础上，将减数进行补码运算即可。</p>
+<p><img src="/assets/8_bit_dec.png" alt="8位减法器"></p>
+<h4 id="RAM实现"><a href="#RAM实现" class="headerlink" title="RAM实现"></a>RAM实现</h4><p>上面我们已经完成了二进制的加法与减法，现在我们需要将我们的运算结果存储起来。</p>
+<h5 id="振荡器-时钟"><a href="#振荡器-时钟" class="headerlink" title="振荡器(时钟)"></a>振荡器(时钟)</h5><p>我们将非门的输入与输出连接起来，得到这样的一个电路：</p>
+<p><img src="/assets/oscillator.png" alt="振荡器"></p>
+<p>由于非门是利用继电器的机制实现的，所以这个电路出现01交替的输出，频率取决于非门通断的速度。</p>
+<p>可以得到这样一个过程：</p>
+<p><img src="/assets/oscillator_out.png" alt="振荡器输出"></p>
+<h5 id="RS触发器"><a href="#RS触发器" class="headerlink" title="RS触发器"></a>RS触发器</h5><p>可以使用触发器来保存位的信息，能够保存一位的信息，就可以扩展到保存多位的信息。</p>
+<p>RS触发器的电路如下，由两个或非门组成：</p>
+<p><img src="" alt="RS触发器"></p>
+<p>真值表：</p>
+<table>
+<thead>
+<tr>
+<th>S</th>
+<th>R</th>
+<th>Q</th>
+<th>Q`</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+</tr>
+<tr>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+</tr>
+<tr>
+<td>0</td>
+<td>0</td>
+<td>Q</td>
+<td>Q`</td>
+</tr>
+<tr>
+<td>1</td>
+<td>1</td>
+<td>NA</td>
+<td>NA</td>
+</tr>
+</tbody>
+</table>
+<p>输入端S可以用来置位，输入端R可以用来复位。当我们向输入端输入信息之后，RS触发器就可以记住其状态。</p>
+<p>待续。。。</p>
+
+
+
+
+</body>
+</html>

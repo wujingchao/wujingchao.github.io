@@ -1,0 +1,444 @@
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    
+<script src="/js/less.min.js"></script>
+
+    
+    
+<link rel="stylesheet" href="/css/main.css">
+
+    
+<link rel="stylesheet" href="/prettify/tomorrow.css">
+
+    
+<script src="/js/jquery-2.1.4.min.js"></script>
+
+    
+<script src="/js/raphael-min.js"></script>
+
+    
+<script src="/js/underscore-min.js"></script>
+
+    
+<script src="/js/sequence-diagram-min.js"></script>
+
+    
+<script src="/js/flowchart-latest.js"></script>
+
+    
+<script src="/prettify/prettify.js"></script>
+
+    
+<script src="/js/common.js"></script>
+
+    
+<script src="/js/gitment.browser.js"></script>
+
+    
+<link rel="stylesheet" href="/css/default.css">
+
+    
+<link rel="stylesheet" href="/lib/fancybox/dist/jquery.fancybox.css">
+
+
+    
+<script src="/lib/fancybox/dist/jquery.fancybox.js"></script>
+
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    
+    
+    <script>
+        (function (i, s, o, g, r, a, m) {
+            i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+                (i[r].q = i[r].q || []).push(arguments)
+            }, i[r].l = 1 * new Date(); a = s.createElement(o),
+                m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
+        })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+        ga('create', 'UA-71897482-1', 'auto');
+        ga('send', 'pageview');
+    </script>
+    
+    
+    <title>读书笔记:View的事件体系</title>
+    <meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=0.8, user-scalable=no">
+<meta name="generator" content="Hexo 6.3.0"></head>
+<body>
+
+<h3 id="Android开发艺术探索读书笔记-View的事件体系"><a href="#Android开发艺术探索读书笔记-View的事件体系" class="headerlink" title="Android开发艺术探索读书笔记: View的事件体系"></a><a target="_blank" rel="noopener" href="http://www.amazon.cn/Android%E5%BC%80%E5%8F%91%E8%89%BA%E6%9C%AF%E6%8E%A2%E7%B4%A2-%E4%BB%BB%E7%8E%89%E5%88%9A/dp/B014HV1X3K/ref=sr_1_1?ie=UTF8&amp;qid=1451616304&amp;sr=8-1&amp;keywords=Android%E5%BC%80%E5%8F%91%E8%89%BA%E6%9C%AF%E6%8E%A2%E7%B4%A2">Android开发艺术探索</a>读书笔记: View的事件体系</h3><h4 id="View基础知识"><a href="#View基础知识" class="headerlink" title="View基础知识"></a>View基础知识</h4><ul>
+<li>View的位置参数</li>
+</ul>
+<pre>                          x
+ ------------------------------->
+ |       ^            ^
+ |   top |            |
+ |       |            |
+ |       v            | 
+ |<----->+---------+  |  bottom
+ |  left |         |  | 
+ |       |   View  |  |
+ |       |         |  |
+ |       +---------+  v
+ |<---------------->
+y|      right            ViewGroup
+ v    
+</pre>
+
+<p>这些位置参数都是相对于View所在的容器ViewGroup，并且有以下关系:<br>    width = right - left;<br>    height = bottom - top;</p>
+<ul>
+<li><p>MotionEvent和TouchSlop</p>
+<ul>
+<li><p>MotionEvent的常用事件有: ACTION_DOWN,ACTION_MOVE,ACTION_UP,ACTION_CANCEL 提供事件坐标的方法getX/getY获取相对于手指当前View的位置，getRawX/getRawY 获取相对与屏幕坐标的位置。</p>
+<p> MotionEvent.getMaskedAction() 得到的是一个只包含事件的Action，比如down,up，其他的信息都被过滤掉<br>MotionEvent.getAction() 还包含了pointer 的信息，MotionEvent.getMaskedAction() = MotionEvent.getAction() &amp;&amp; 0xff</p>
+</li>
+<li><p>TouchSlop系统能够识别的被认为是滑动最小距离，是一个系统常量，和设备关系，通过这个方法获取:<br> ViewConfiguration.get(getContext()).getScaledToucSlop()</p>
+</li>
+</ul>
+</li>
+<li><p>VelocityTracker,GestrueDetector,Scroller</p>
+<ul>
+<li><p>VelocityTracker用于检测手指在屏幕上滑动竖直方向和垂直方向的速度，使用方法如下:</p>
+<pre><code class="java">//从系统定义的对象池里面获取
+VelocityTracker velocityTracker = VelocityTracker.obtain();
+
+//通常在ACTION_DOWN的时候添加
+velocityTracker.addMovement(event);
+
+//通常在在ACTION_MOVE中获取滑动的速度
+//Only call this when you actually want to retrieve velocity information, as it is relatively expensive.
+//A value of 1 provides pixels per millisecond, 1000 provides pixels per second, etc
+//参数表示的是一个时间间隔，它的单位是millisecond,计算的结果是这个时间间隔内手指滑动的像素数
+velocityTracker.computeCurrentVelocity(1000);
+//计算公式: 速度 = (终点位置 - 起点位置) / 时间段
+//例如从左往右滑就是正值
+velocityTracker.getXVelocity();
+velocityTracker.getYVelocity();
+
+//在ACTION_UP的时候清空状态并回收到对象池里面，以便复用
+velocityTracker.clear();
+velocityTracker.recycle();
+</code></pre>
+<p>另:如果想要获取多点触屏下的滑动速度，使用 VelocityTrackerCompat 来处理</p>
+</li>
+<li><p>GestrueDetector 是一个辅助类，用于我们检测用户的触屏行为，例如单击，滑动，双击等，不用我们去组合判断 ACTION_DOWN，ACTION_MOVE，ACTION_UP 等事件，使用方法如下:</p>
+<pre><code class="java">//实例化对象，第一个是context，第二则是实现接口OnGestureListener的对象，推荐使用 SimpleOnGestureListener,里面的方法都是空实现，选择我们需要的实现就可以了
+GestureDetector mGestureDetector = new GestureDetector(this,new GestureDetector.SimpleOnGestureListener());
+//解决长按屏幕后无法拖动的现象
+mGestureDetector.setIsLongpressEnabled(false);
+
+//接管目标View的onTouchEvent方法
+public boolean onTouchEvent(MotionEvent event) &#123;
+  return mGestureDetector.onTouchEvent(event);
+&#125;
+</code></pre>
+<p>常用的监听事件有:onSingleTapUp, onFling, onScroll(拖动), onLongPress, onDoubleTap。</p>
+</li>
+<li><p>Scroller 用于完成平滑移动的辅助类，当我们使用 scrollBy/scrollTo 进行滑动操作的时候，滑动是瞬间完成的，Scoller 结合View#computeScroll可以实现平滑移动的效果，注意只能滑动View里面的内容。典型的用法如下:</p>
+<pre><code class="java">Scroller mScroller = new Scroller(mContext);
+
+//平移滑动方法
+public void smoothScrollTo(int x,int y) &#123;
+  int startX = getScrollX();
+  int startY = getScrollY();
+  int dx = x - startX;
+  int dy = y - startY;
+  mScroller.startScroll(startX,startY,dx,dy,1000);
+  invalidate();
+&#125;
+
+//Called by a parent to request that a child update its values for mScrollX and mScrollY if necessary.
+@Overrite
+public void computeScroll() &#123;
+  //用于检测滑动是否结束
+  if(mScroller.computeScrollOffset()) &#123;
+      scrollTo(mScroller.getCurrX(),mScroller.getCurrY());
+      postInvalidate();
+  &#125;
+&#125;
+
+</code></pre>
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="View的滑动"><a href="#View的滑动" class="headerlink" title="View的滑动"></a>View的滑动</h4><ul>
+<li><p>使用scrollTo/scrollBy<br>  这两个方法就是改变View内部的两个属性 mScrollX 和 mScrollX。mScrollX为View左边缘与View内容左边缘的水平方向上的距离，mScrollY为View上边缘与View内容上边缘的距离。<br>  所以当调用 scrollBy(100,100)的时候可以看见View是分别向左和向上滑动100像素。</p>
+</li>
+<li><p>使用动画<br>  使用动画来移动View，主要是操作View的 translationX 和 translationY 属性。<br>  View动画，并不能真正改变对象的属性，只是View的一个影像。（适用于动画元素不需要与用户交互）实例:</p>
+<pre><code class="java">  ImageView spaceshipImage = (ImageView) findViewById(R.id.spaceshipImage);
+  //res/anim 动画配置文件
+  Animation hyperspaceJumpAnimation = AnimationUtils.loadAnimation(this, R.anim.hyperspace_jump);
+  spaceshipImage.startAnimation(hyperspaceJumpAnimation);
+</code></pre>
+</li>
+<li><p>改变布局参数，即改变LayoutParams</p>
+<pre><code class="java">  MarginLayoutParams params = (MarginLayoutParams)button.getLayoutParams();
+  params.width += 100;
+  button.requestLayout();//button.setLayoutParams(params);
+</code></pre>
+</li>
+</ul>
+<h4 id="弹性滑动"><a href="#弹性滑动" class="headerlink" title="弹性滑动"></a>弹性滑动</h4><ul>
+<li><p>使用Scroller<br>  原理: 当我们调用 mScroller.startScroll(startX,startY,dx,dy,1000); 的时候，Scroller内部就保存了我们传入的参数，起始位置的参数，要滑动的距离，以及滑动时间，然后再调用 invalidate() 方法会导致View重绘，View的 draw() 方法又会去调用 computeScroll() 这是一个空实现的方法，在里面判断是否滑动结束。之后调用 postInvalidate() （效果和invalidate()一样，只是可以在非UI线程里面调用，通过Handler发消息实现），又实现View的重绘，周而复始就实现了View的滑动，直到滑动结束。</p>
+<pre><code class="java">  @Override
+  public void computeScroll() &#123;
+      //computeScrollOffset 的实现原理就是根据滑动传递过来的时间，然后根据这个时间与流逝的时间结合插值器计算出当前
+      //应该滑动到的位置，当如果流逝的时间大于我们滑动传递过来的时间，滑动就结束。
+      if(mScroller.computeScrollOffset()) &#123;//返回true，继续滑动
+          scrollTo(mScroller.getCurrX(),mScroller.getCurrY());
+          postInvalidate();
+      &#125;
+  &#125;
+</code></pre>
+</li>
+<li><p>通过动画</p>
+</li>
+<li><p>使用延时策略，Handler，View#postDelay，Thread#sleep方法。这种方式时间不确定，因为系统消息，线程调度也是需要时间的。</p>
+</li>
+<li><p>使用DragViewHelper</p>
+</li>
+</ul>
+<blockquote>
+<p>ViewDragHelper is a utility class for writing custom ViewGroups. It offers a number of useful operations and state tracking for allowing a user to drag and reposition views within their parent ViewGroup.</p>
+</blockquote>
+<p>下面是一个例子并加上了一些注释，更详细的用法可以参考<a target="_blank" rel="noopener" href="http://blog.csdn.net/lmj623565791/article/details/46858663">这篇博客</a></p>
+<pre><code class="java">
+public class DragViewGroup extends ViewGroup &#123;
+
+    private static final String TAG = &quot;DragViewGroup&quot;;
+
+    private float density;
+
+    private ViewDragHelper viewDragHelper;
+
+
+    private ViewDragHelper.Callback callback = new ViewDragHelper.Callback() &#123;
+
+        //用于处理被触摸的View是否能够被拖动,ACTION_DOWN被调用
+        @Override
+        public boolean tryCaptureView(View child, int pointerId) &#123;
+            Log.e(TAG,String.format(&quot;child id = %s,pointerId = %s&quot;,child.getId(),pointerId));
+            return true;
+        &#125;
+
+        //相对于Parent Y方向拖动位置
+        @Override
+        public int clampViewPositionVertical(View child, int top, int dy) &#123;
+            Log.e(TAG, String.format(&quot;child id = %s,top = %s,dy = %s&quot;, child.getId(), top, dy));
+            return top;
+        &#125;
+
+        //相对于Parent X方向拖动位置
+        @Override
+        public int clampViewPositionHorizontal(View child, int left, int dx) &#123;
+            Log.e(TAG,String.format(&quot;child id = %s,left = %s,dx = %s&quot;,child.getId(),left,dx));
+            return left;
+        &#125;
+
+        //当child view能够消耗事件的情况下(比如clickable)，需要根据情况重写下面两个方法
+        //并且返回值大于零才能处理拖动
+        @Override
+        public int getViewVerticalDragRange(View child) &#123;
+            return getMeasuredWidth() - child.getMeasuredWidth();
+        &#125;
+
+
+        @Override
+        public int getViewHorizontalDragRange(View child) &#123;
+            return getMeasuredHeight() - child.getMeasuredHeight();
+        &#125;
+
+        //拖动的View释放
+        //The fling velocity is also supplied:
+        //xvel - X velocity of the pointer as it left the screen in pixels per second.
+        //yvel - Y velocity of the pointer as it left the screen in pixels per second.
+        @Override
+        public void onViewReleased(View releasedChild, float xvel, float yvel) &#123;
+            Log.e(TAG,String.format(&quot;releasedChild id = %s,xvel = %s,yvel = %s&quot;,releasedChild.getId(),xvel,yvel));
+
+            //用于平滑移动View，需要重写View#computeScroll，因为是用Scroller实现的
+            viewDragHelper.settleCapturedViewAt(releasedChild.getLeft() + 100, releasedChild.getTop() + 100);
+            invalidate();
+        &#125;
+
+//        //在边界拖动时回调
+        @Override
+        public void onEdgeDragStarted(int edgeFlags, int pointerId) &#123;
+            if(edgeView != null) &#123;
+                viewDragHelper.captureChildView(edgeView, pointerId);
+            &#125;
+        &#125;
+    &#125;;
+
+    @Override
+    public void computeScroll() &#123;
+        if(viewDragHelper.continueSettling(true)) &#123;
+            postInvalidate();
+        &#125;
+    &#125;
+
+    public DragViewGroup(Context context, AttributeSet attrs) &#123;
+        super(context, attrs);
+        density = context.getResources().getDisplayMetrics().density;
+    &#125;
+
+
+    @Override
+    protected void onFinishInflate() &#123;
+        super.onFinishInflate();
+        viewDragHelper = ViewDragHelper.create(this,1.0f,callback);
+        viewDragHelper.setEdgeTrackingEnabled(ViewDragHelper.EDGE_LEFT);
+    &#125;
+
+    @Override
+    public boolean onInterceptTouchEvent(MotionEvent ev) &#123;
+        return viewDragHelper.shouldInterceptTouchEvent(ev);
+    &#125;
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) &#123;
+        viewDragHelper.processTouchEvent(event);
+        return true;
+    &#125;
+
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) &#123;
+        measureChildren(widthMeasureSpec, heightMeasureSpec);
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+    &#125;
+
+    private View edgeView;
+
+    @Override
+    protected void onLayout(boolean changed, int l, int t, int r, int b) &#123;
+        edgeView = getChildAt(0);
+        final int childCount = getChildCount();
+        for(int i = 0; i &lt; childCount; i ++) &#123;
+            View childView = getChildAt(i);
+            childView.layout(0, (int) (40 * i * density),childView.getMeasuredWidth(),(int) (40 * (i + 1) * density));
+        &#125;
+    &#125;
+&#125;
+
+</code></pre>
+<h4 id="View的事件分发机制"><a href="#View的事件分发机制" class="headerlink" title="View的事件分发机制"></a>View的事件分发机制</h4><ul>
+<li>触摸事件的传递规则</li>
+</ul>
+<p>这三个方法的关系:<br>    dispatchTouchEvent(MotionEvent ev)<br>    onInterceptTouchEvent(MotionEvent event)<br>    onTouchEvent(MotionEvent event)<br>作者用的伪代码描述:(简直是淋漓尽致，言简意赅!!!)</p>
+<pre><code class="java">public void dispatchTouchEvent(MotionEvent ev) &#123;
+    boolean isConsume = false;
+    if(onInterceptTouchEvent(ev)) &#123;
+        consume = onTouchEvent(ev);
+    &#125;else &#123;
+        consume = child.dispatchTouchEvent(ev);
+    &#125;
+    return consume;
+&#125;
+</code></pre>
+<p>1.事件从Activity的dispatchTouchEvent开始传递 -&gt; Window -&gt; ViewGroup -&gt; View。</p>
+<p>2.给View设置 onTouchListener 其执行优先级比 onTouchEvent 要高，如果事件被 onTouchListener#onTouch 消耗，那么 onTouchEvent 将不会被调用。给View设置 onClickListener 其执行优先级比 onTouchEvent 要高。</p>
+<p>3.如果一个View的onTouchEvent没有被消耗掉，会传回父View的onTouchEvent，以此类推，如果都没有那么最终会出现在Activity#onTouchEvent。</p>
+<p>4.当一个View没有处理MotionEvent.ACTION_DOWN时，后续的事件将不会到来（因为处理也没有意义），如果处理了之后后续的事件被拦截，那么将会收到ACTION_CANCEL，所以我们应当根据情况处理ACTION_CANCEL这个事件。</p>
+<p>5.如果View不消耗除 ACTION_DOWN 以外的其他事件，那么这个点击事件会消失，父元素的 onTouchEvent 也不会被调用最终消失的点击事件会传递给Activity处理。</p>
+<p>6.ViewGroup 默认不拦截任何事件即 onInterceptTouchEvent 默认返回false。 </p>
+<p>7.View没有onInterceptTouchEvent方法，一旦事件传递给它，那么它的onTouchEvent将会被调用。</p>
+<p>8.View的onTouchEvent默认都会消耗事件（返回true），除非它是不可点击的（clickable和longClickable同时为false）。</p>
+<p>9.View的enable属性不影响onTouchEvent的默认返回值，哪怕一个View是disable的。</p>
+<p>另外一份比较好的<a href="../assets/PRE_andevcon_mastering-the-android-touch-system.pdf">总结</a>。</p>
+<blockquote>
+<p>　　规则较多，个人认为写自定义控件的时候尽量不要去利用dispatchTouchEvent来实现，容易出错，这主要用来分发事件给到子View，或者在自己的onTouchEvent里面消耗，或者事件传递回给父View。当我们自己实现ViewGroup重点实现onInterceptTouchEvent和onTouchEvent，根据逻辑是否拦截，实现View的时候就只实现onTouchEvent实现我们需要的效果。</p>
+</blockquote>
+<h4 id="View的滑动冲突"><a href="#View的滑动冲突" class="headerlink" title="View的滑动冲突"></a>View的滑动冲突</h4><ul>
+<li><p>常见滑动冲突</p>
+<ul>
+<li><p>场景一，外部滑动方向和内部滑动方向不一致<br>  处理原则是，例如内部左右滑动，外部上下滑动情况下，左右滑动时外部View拦截，上下滑动时，内部View拦截。<br>  ViewPager内部处理了这种滑动冲突。</p>
+</li>
+<li><p>场景二，外部滑动方向和内部滑动方向一直<br>  根据业务需求来处理</p>
+</li>
+<li><p>场景三，上面两种情况嵌套<br>  根据业务需求来处理</p>
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="滑动冲突解决方式"><a href="#滑动冲突解决方式" class="headerlink" title="滑动冲突解决方式"></a>滑动冲突解决方式</h4><ul>
+<li>外部拦截(推荐使用):主动拦截事件，不向子View传递</li>
+</ul>
+<pre><code class="java">public boolean onInterceptTouchEvent(MotionEvent event) &#123;
+    boolean intercepted = false;
+    switch(event.getAction()) &#123;
+        /* 一旦拦截，后续的事件就不会传递给子View了
+         * ACTION_DOWN不受FLAG_DISALLOW_INTERCET控制，父容器一旦拦截，
+         * 子View调用requestDisallowInterceptTouchEvent将无法实现内部
+         * 拦截
+         *
+         *这里还需要注意，如果MotionEvent.ACTION_DOWN没有拦截，被子View给消耗了
+         *onTouchEvent就收不到，所以根据需要也不一定要返回false
+         */
+        case MotionEvent.ACTION_DOWN: &#123;
+            intercepted = false;
+            break;
+        &#125;
+
+        case MotionEvent.ACTION_MOVE: &#123;
+            if(需要拦截当前的点击事件) &#123;//子元素将收到ACTION_CANCEL
+                intercepted = true
+            &#125;else &#123;
+                intercepted = false;
+            &#125;
+            break;
+        &#125;
+
+        case MotionEvent.ACTION_UP: &#123;
+            intercepted = false;
+        &#125;
+
+        default:
+            break;
+    &#125;
+    return intercepted;
+&#125;
+
+</code></pre>
+<ul>
+<li>内部拦截:可以理解为让父View来拦截自己</li>
+</ul>
+<pre><code class="java">//重写子View的dispatchOnTouchEvent
+public boolean dispatchTouchEvent(MotionEvent event) &#123;
+    switch(event.getAction()) &#123;
+        case MotionEvent.ACTION_DOWN: &#123;
+            //True if the child does not want the parent to intercept touch events
+            parent.requestDisallowInterceptTouchEvent(true);
+            break;
+        &#125;
+        case MotionEvent.ACTION_MOVE:&#123;
+            if(父容器需要此类点击事件) &#123;
+                parent.requestDisallowInterceptTouchEvent(false);
+            &#125;
+            break;
+        &#125;
+        default:
+            break;
+
+    &#125;
+    return super.dispatchTouchEvent(event);
+&#125;
+
+//好需要结合父View的onInterceptTouchEvent
+public boolean onInterceptTouchEvent(MotionEvent event) &#123;
+    if(event.getAction() == MotionEvent.ACTION_DOWN) &#123;
+        return false;
+    &#125;else &#123;
+        return true;
+    &#125;
+&#125;
+</code></pre>
+
+
+
+
+</body>
+</html>

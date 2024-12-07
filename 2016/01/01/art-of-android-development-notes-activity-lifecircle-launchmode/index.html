@@ -1,0 +1,206 @@
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    
+<script src="/js/less.min.js"></script>
+
+    
+    
+<link rel="stylesheet" href="/css/main.css">
+
+    
+<link rel="stylesheet" href="/prettify/tomorrow.css">
+
+    
+<script src="/js/jquery-2.1.4.min.js"></script>
+
+    
+<script src="/js/raphael-min.js"></script>
+
+    
+<script src="/js/underscore-min.js"></script>
+
+    
+<script src="/js/sequence-diagram-min.js"></script>
+
+    
+<script src="/js/flowchart-latest.js"></script>
+
+    
+<script src="/prettify/prettify.js"></script>
+
+    
+<script src="/js/common.js"></script>
+
+    
+<script src="/js/gitment.browser.js"></script>
+
+    
+<link rel="stylesheet" href="/css/default.css">
+
+    
+<link rel="stylesheet" href="/lib/fancybox/dist/jquery.fancybox.css">
+
+
+    
+<script src="/lib/fancybox/dist/jquery.fancybox.js"></script>
+
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    
+    
+    <script>
+        (function (i, s, o, g, r, a, m) {
+            i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+                (i[r].q = i[r].q || []).push(arguments)
+            }, i[r].l = 1 * new Date(); a = s.createElement(o),
+                m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
+        })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+        ga('create', 'UA-71897482-1', 'auto');
+        ga('send', 'pageview');
+    </script>
+    
+    
+    <title>读书笔记:Activity的生命周期和启动模式</title>
+    <meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=0.8, user-scalable=no">
+<meta name="generator" content="Hexo 6.3.0"></head>
+<body>
+
+<h3 id="Android开发艺术探索-Activity的生命周期和启动模式"><a href="#Android开发艺术探索-Activity的生命周期和启动模式" class="headerlink" title="Android开发艺术探索:Activity的生命周期和启动模式"></a><a target="_blank" rel="noopener" href="http://www.amazon.cn/Android%E5%BC%80%E5%8F%91%E8%89%BA%E6%9C%AF%E6%8E%A2%E7%B4%A2-%E4%BB%BB%E7%8E%89%E5%88%9A/dp/B014HV1X3K/ref=sr_1_1?ie=UTF8&amp;qid=1451616304&amp;sr=8-1&amp;keywords=Android%E5%BC%80%E5%8F%91%E8%89%BA%E6%9C%AF%E6%8E%A2%E7%B4%A2">Android开发艺术探索</a>:Activity的生命周期和启动模式</h3><p>　　决定把读的每一本书都做一下读书笔记或者感悟，技术的或者非技术的，一方面方便以后复习查阅，另一方面也能记录自己进步的脚印，2016了，大家要继续努力哈！这本是一本Android开发比较进阶的书籍，建议有一定Android开发基础知识后再进行阅读。</p>
+<h4 id="典型情况下Activity的生命周期"><a href="#典型情况下Activity的生命周期" class="headerlink" title="典型情况下Activity的生命周期"></a>典型情况下Activity的生命周期</h4><p>正常情况下的生命周期</p>
+<blockquote>
+<p>onCreate -&gt; onStart -&gt; onResume -&gt; onPause -&gt; onStop -&gt; onDestroy</p>
+</blockquote>
+<p>当从其他Activity切换到已经存在的Activity时，就会调用 </p>
+<blockquote>
+<p>onRestart -&gt; onStart -&gt; onResume</p>
+</blockquote>
+<p>应该避免在onPause和onStop中做耗时操作，因为执行完onPause之后新的Activity才能执行onStop和onResume，耗时操作会拖慢进入下一个Activity的速度。</p>
+<p>当Activity从A调用startActivity启动B的时候，生命周期会有重叠的现象，通过源码分析执行顺序是这样的：</p>
+<table>
+<thead>
+<tr>
+<th>Activity</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A</td>
+<td>onPause</td>
+</tr>
+<tr>
+<td>B</td>
+<td>onCreate</td>
+</tr>
+<tr>
+<td>B</td>
+<td>onStart</td>
+</tr>
+<tr>
+<td>B</td>
+<td>onResume</td>
+</tr>
+<tr>
+<td>A</td>
+<td>onStop （当A不可见的情况下）</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>如果您必须在第一个 Activity 停止时向数据库写入数据，以便下一个 Activity 能够读取该数据，则应在 onPause() 而不是 onStop() 执行期间向数据库写入数据。尽量避免在onPause里做CPU密集型的任务，会导致进入第二个Activity的速度变慢。</p>
+</blockquote>
+<h4 id="异常情况下Activity的生命周期"><a href="#异常情况下Activity的生命周期" class="headerlink" title="异常情况下Activity的生命周期"></a>异常情况下Activity的生命周期</h4><ul>
+<li><p>系统的配置发生改变(如屏幕旋转，系统语言改变)，当前运行的Activity会重建，所以会相应的执行</p>
+<p>  onPause -&gt; onStop -&gt; onDestroy</p>
+<p>  由于是异常情况，所有系统会调用onSaveInstanceState来保存我们需要的状态，只需把需要保存的内容存入Bundle即可，重建完成之后，我们可以通过onCreate或者onRestoreInstanceState的回调参数获取之前保存的数据，官方推荐使用onRestoreInstanceState(一般在onStart之后)，因为onCreate中正常情况下的回调参数为空。</p>
+<p>  除此之外系统会为我们保存Activity的视图结构，例如TextView中的数据，ListView的滚动位置，因为在View中同样有onSaveInstanceState和onRestoreInstanceState这两个方法。Activity会委托Window从顶级视图遍历子视图，执行onSaveInstanceState和onRestoreInstanceState来保存和恢复数据。</p>
+<p>  我们可以有办法使Activity在不重建的情况下，在AndroidManifest.xml的Activity标签android:configChanges配置选项，常用的有locale、orientation、keyboarHidden ，多个的情况下使用”|” 来连接。更多的配置项可以参考<a target="_blank" rel="noopener" href="http://developer.android.com/intl/zh-cn/guide/topics/manifest/activity-element.html#config">官方文档</a>。配置之后，当我们配置的系统配置发生改变的时候，Activity就不会重建，也就不会执行onSaveInstanceState和onRestoreInstanceState，而是执行onConfigurationChanged， 所以我们可以在这个回调方法里面做相应的操作。</p>
+</li>
+</ul>
+<ul>
+<li>系统资源不足导致优先级低的Activity被杀死，优先级从高到底的Activity状态:<ul>
+<li>正在交互的Activity</li>
+<li>没有焦点的Activity(例如当前Activity的背景颜色为透明的)</li>
+<li>不可见的Activity</li>
+</ul>
+</li>
+</ul>
+<h4 id="Activity的启动模式"><a href="#Activity的启动模式" class="headerlink" title="Activity的启动模式"></a>Activity的启动模式</h4><ul>
+<li>standard  标准的任务栈，后进先出<br>  值得注意的有一点:当使用非Activity的Context(例如ApplicationContext)启动Activity会抛异常，提示:<pre><code>calling startactivity() from outside of an activity context requires the flag_activity_new_task flag
+</code></pre></li>
+</ul>
+<p>因为非Activity的Context里面并没有保存所谓的任务栈的相关信息，需要加上FLAG_ACTIVITY_NEW_TASK_FLAG的标志位，这时候实际上是以singleTask的模式来启动的。</p>
+<ul>
+<li>singleTop 栈顶复用模式<br>  当栈顶的Activity为这种模式，就不会重新创建Activity，而是复用此Activity，因此就不会回调onCreate和onStart方法。此时可以处理onNewIntent的方法回调来处理相关的业务信息。</li>
+</ul>
+<ul>
+<li><p>singleTask 栈内复用模式<br>栈内单实例，顾名思义就是一个栈里面只能存在一个该实例，而且有clearTop的功能（当栈中存在此元素的时候，会向上清空此Activity上面的所有Activity，也会相应地执行onDestory方法）。</p>
+</li>
+<li><p>singleInstance 单实例模式<br>可看作是singleTask的增强版，此种模式的Activity只能单独的位于一个任务栈里面，且只有一个实例。</p>
+<p> AndroidManifest.xml中的TaskAffinity标识了一个Activity任务栈的名称，默认是包名，单独使用没有意义，任务栈分为前台任务栈和后台任务栈，任务栈的表现形式为长按菜单键出现的Activity列表。</p>
+<p> TaskAffinity主要与singleTask或allowTaskReparenting配合使用</p>
+<ul>
+<li><p>与sigleTask:它是具有该模式的Activity的目前任务栈的名字，待启动的Activity（前提是没有明确知名任务栈不同 配置singleTask 且TaskAffinity不同）会运行在名字和TaskAffiniy相同的任务栈中。</p>
+</li>
+<li><p>与allowTaskReparenting:当一个应用A启动了应用B的某个Activity后，如果这个Activity的allowTaskReparenting为true,那么当应用B被启动后，此Activity会直接从应用A的任务栈转移到应用B的任务栈中。</p>
+</li>
+<li><p>一个例子:<br>A,B,C三个Activity，A的启动模式为standard,B和C的为SingleTask,A与B的TaskAffinity不同，B与C的TaskAffinity相同，A启动B，B启动C，此时有两个任务栈，当从C启动A的时候，因为A是Stardard模式，所以系统会创建一个新的实例并添加到启动他的那个Activity任务栈中,所以此时的此时任务栈的情况是A BCA,然后再从A中启动B，SingleTask模式的Activity切换到栈顶会导致它之上的栈内Activity出栈，所以此时的任务栈情况是 A B。</p>
+</li>
+</ul>
+</li>
+</ul>
+<blockquote>
+<p>启动模式和TaskAffinity更详细的实例可以参考<a target="_blank" rel="noopener" href="http://blog.csdn.net/zhangjg_blog/article/details/10923643">这篇博文</a></p>
+</blockquote>
+<h4 id="启动模式的另外一种设置方法"><a href="#启动模式的另外一种设置方法" class="headerlink" title="启动模式的另外一种设置方法"></a>启动模式的另外一种设置方法</h4><p> 就是通过给Intent设置标志位，这种方法的优先级高于在AndroidManifest.xml中设置。</p>
+<p> 第一种方式无法设置FLAG_CLEAR_TOP的效果，第二种方式无法设置SingleInstance:</p>
+<ul>
+<li><p>FLAG_ACTIVITY_NEW_TASK</p>
+</li>
+<li><p>FLAG_ACTIVITY_SINGLE_TOP</p>
+</li>
+<li><p>FLAG_ACTIVITY_CLEAR_TOP</p>
+</li>
+<li><p>FLAG_ACTIVITY_EXECLUDE_FROM_RECENTS:不会出现在历史Activity列表里面，等同于在AndroidManifest.xml里设置Activity的这个属性android:excudeFromRecents=”true”</p>
+</li>
+</ul>
+<h4 id="IntentFilter匹配规则"><a href="#IntentFilter匹配规则" class="headerlink" title="IntentFilter匹配规则"></a>IntentFilter匹配规则</h4><p>用于过滤隐式的Intent，过滤的内容有action,category,data</p>
+<ul>
+<li>系统中没有指定Action，那么出现匹配失败</li>
+<li>startActivity的时候系统会默认给我加上”android.intent.category.DEFAULT”这个category,所以为了让我们的Activity能够接收隐式的Activity，intent-filter需要加上”android.intent.category.DEFAULT”这个intent-filter。</li>
+</ul>
+<p>data的属性:scheme,host,port,path,pathPattern,pathPrefix<br>URI结构：</p>
+<pre><code>   &lt;scheme&gt;://&lt;host&gt;:&lt;port&gt;/[&lt;paht&gt;|&lt;pathPrefix&gt;|&lt;pathPattern&gt;]
+</code></pre><ul>
+<li>匹配规则举例：</li>
+</ul>
+<pre><code> &lt;intent-filter&gt;
+    &lt;data android:mimeType=&quot;image/*&quot; /&gt;
+ &lt;/intent-filter&gt;
+</code></pre><p>匹配规则为所有图片类型，虽然没有指定URI，但是有默认值content 、file</p>
+<blockquote>
+<p>intent.setDataAndType(Uri.parse(“file://abc”),”image/png”);</p>
+</blockquote>
+<p>另外，如果Intent要指定完整的Intent的时候，不能单独调用setData或者setType ，查看源码可以发现这两个方法都会互相清空data的某些属性。</p>
+<ul>
+<li>查找匹配</li>
+</ul>
+<p>如果我们匹配不了隐式Intent，那么调用startActivity的时候就会报错，我们可以使用PackageManager或者Intent中的的resolveActivity(Intent intent,int flag)方法，匹配最佳的Intent,如果匹配不了就会返回null</p>
+<blockquote>
+<p>flags:The most important is MATCH_DEFAULT_ONLY, to limit the resolution to only those activities that support the CATEGORY_DEFAULT.</p>
+</blockquote>
+<ul>
+<li>加入Launcher启动的intent-filter:</li>
+</ul>
+<pre><code> &lt;action android:name=&quot;android.intent.action.MAIN&quot; /&gt;
+ &lt;category android:name=&quot;android.intent.category.LAUNCHER&quot; /&gt;
+</code></pre>
+
+
+
+</body>
+</html>

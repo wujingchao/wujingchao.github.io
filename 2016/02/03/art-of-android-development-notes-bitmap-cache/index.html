@@ -1,0 +1,177 @@
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    
+<script src="/js/less.min.js"></script>
+
+    
+    
+<link rel="stylesheet" href="/css/main.css">
+
+    
+<link rel="stylesheet" href="/prettify/tomorrow.css">
+
+    
+<script src="/js/jquery-2.1.4.min.js"></script>
+
+    
+<script src="/js/raphael-min.js"></script>
+
+    
+<script src="/js/underscore-min.js"></script>
+
+    
+<script src="/js/sequence-diagram-min.js"></script>
+
+    
+<script src="/js/flowchart-latest.js"></script>
+
+    
+<script src="/prettify/prettify.js"></script>
+
+    
+<script src="/js/common.js"></script>
+
+    
+<script src="/js/gitment.browser.js"></script>
+
+    
+<link rel="stylesheet" href="/css/default.css">
+
+    
+<link rel="stylesheet" href="/lib/fancybox/dist/jquery.fancybox.css">
+
+
+    
+<script src="/lib/fancybox/dist/jquery.fancybox.js"></script>
+
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    
+    
+    <script>
+        (function (i, s, o, g, r, a, m) {
+            i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+                (i[r].q = i[r].q || []).push(arguments)
+            }, i[r].l = 1 * new Date(); a = s.createElement(o),
+                m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
+        })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+        ga('create', 'UA-71897482-1', 'auto');
+        ga('send', 'pageview');
+    </script>
+    
+    
+    <title>读书笔记:Bitmap的加载和Cache</title>
+    <meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=0.8, user-scalable=no">
+<meta name="generator" content="Hexo 6.3.0"></head>
+<body>
+
+<h3 id="Android开发艺术探索-Bitmap的加载和Cache"><a href="#Android开发艺术探索-Bitmap的加载和Cache" class="headerlink" title="Android开发艺术探索:Bitmap的加载和Cache"></a><a target="_blank" rel="noopener" href="http://www.amazon.cn/Android%E5%BC%80%E5%8F%91%E8%89%BA%E6%9C%AF%E6%8E%A2%E7%B4%A2-%E4%BB%BB%E7%8E%89%E5%88%9A/dp/B014HV1X3K/ref=sr_1_1?ie=UTF8&amp;qid=1451616304&amp;sr=8-1&amp;keywords=Android%E5%BC%80%E5%8F%91%E8%89%BA%E6%9C%AF%E6%8E%A2%E7%B4%A2">Android开发艺术探索</a>:Bitmap的加载和Cache</h3><h4 id="Bitmap的高效加载"><a href="#Bitmap的高效加载" class="headerlink" title="Bitmap的高效加载"></a>Bitmap的高效加载</h4><p><a target="_blank" rel="noopener" href="http://developer.android.com/intl/zh-cn/training/displaying-bitmaps/index.html">官方文档</a></p>
+<p>加载Bitmap主要使用的是Android系统提供的BitmapFactory，提供了四种方法，decodeFile、decodeResource、decodeStream、decodeByteArray。<br>高效加载Bitmap就是利用BitmapFactory.Options来加载所需要的尺寸图片，利用采样率参数inSampleSize，当inSampleSize为1是，采样后的图片为原始大小，当采样率为2时，宽高都为原来的1/2，像素数为原来的1/4，内存大小为原来的1/4。imSampleSize小于1，无缩放效果。<br>加载图片步骤:<br>　　将BitmapFactory.Options的inJustDecodeBounds参数设为true，并加载图片，就可以得到BitmpaFactory.Options里图片的原始宽高信息，对应于outWidth和outHeight，根据需要的图片大小和原始宽高计算采样与，再将BitmapFactory.Options.inJustDecodeBounds设置为false重新加载图片就可以得到目标图片的大小。</p>
+<pre><code>public static Bitmap decodeSampledBitmapFromResource(Resources res, int resId,
+        int reqWidth, int reqHeight) &#123;
+
+    // First decode with inJustDecodeBounds=true to check dimensions
+    final BitmapFactory.Options options = new BitmapFactory.Options();
+    options.inJustDecodeBounds = true;
+    BitmapFactory.decodeResource(res, resId, options);
+
+    // Calculate inSampleSize
+    options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight);
+
+    // Decode bitmap with inSampleSize set
+    options.inJustDecodeBounds = false;
+    return BitmapFactory.decodeResource(res, resId, options);
+&#125;
+
+public static int calculateInSampleSize(
+            BitmapFactory.Options options, int reqWidth, int reqHeight) &#123;
+    // Raw height and width of image
+    final int height = options.outHeight;
+    final int width = options.outWidth;
+    int inSampleSize = 1;
+
+    if (height &gt; reqHeight || width &gt; reqWidth) &#123;
+
+        final int halfHeight = height / 2;
+        final int halfWidth = width / 2;
+//图片实际大小每次对半减，直到长和宽同时小于等于我们需要的长和宽
+        // Calculate the largest inSampleSize value that is a power of 2 and keeps both
+        // height and width larger than the requested height and width.
+        while ((halfHeight / inSampleSize) &gt; reqHeight
+                &amp;&amp; (halfWidth / inSampleSize) &gt; reqWidth) &#123;
+            inSampleSize *= 2;
+        &#125;
+    &#125;
+
+    return inSampleSize;
+&#125;
+</code></pre><h4 id="Android中的缓存策略"><a href="#Android中的缓存策略" class="headerlink" title="Android中的缓存策略"></a>Android中的缓存策略</h4><p>常用的缓存算法是LRU(Least Recently Used)，最近最少使用算法，当缓存满是，优先淘汰最近最少使用的缓存对象。Android中主要用LruCache实现内存缓存，DiskLruCache实现磁盘缓存。</p>
+<ul>
+<li>LruCache<br>LruCache是一个泛型类，内部采用LinkHashMap已强引用的方式来存储外部的缓存对象，而且是线程安全的。</li>
+</ul>
+<p>强应用:直接的对象引用<br>软引用:当一个对象只有软引用存在是，系统内存不足时此对象就会被gc回收<br>弱引用:当一个对象只有弱引用是，此对象随时被gc回收</p>
+<pre><code>int maxMemory = (int)(Runtime.getRuntime().maxMemory()/1024);
+int cacheSize = maxMemory / 8;
+mLruCache = new LruCache&lt;String,Bitmap&gt;(cacheSize) &#123;
+    @Override
+    protected int sizeOf(String key,Bitmap bitmap) &#123;
+        return bitmap.getRowBytes() * bitmap.getHeight() / 1024;
+    &#125;
+
+        protected void entryRemoved(boolean evicted, K key, V oldValue, V newValue) &#123;
+            //do something
+        &#125;
+&#125;
+
+//获取缓存对象
+mLruCache.get(key);
+//存储缓存对象
+mLruCache.put(key,bitmap);
+//移除缓存对象
+mLruCache.remote(key);
+</code></pre><p>sizeOf用于计算缓存对象大小，这里的大小单位和总容量一直，这里是KB。<a href="/assets/LruCache.java">LruCache源码</a>。</p>
+<ul>
+<li>DiskLruCache</li>
+</ul>
+<p>1.创建缓存</p>
+<pre><code>public static DiskLruCache open(File directory, int appVersion, int valueCount, long maxSize)
+</code></pre><p>directory:可写的缓存目录，可以使用SD卡上面的缓存目录/sdcard/Android/data/package_name/cache，使用该目录的好处就是当APK卸载之后，就会自动删除目录<br>valueCount:单个节点所对应的缓存个数，一般为1即可<br>maxSize:缓存大小，单位字节</p>
+<p>2.添加缓存</p>
+<pre><code>DiskLruCache.Editor editor = mDiskLruCache.editor(key);
+OutputStream os = editor.newOutputStream(0);
+if(downloadUrlToStream(url,os)) &#123;
+    editor.commit();
+&#125;else &#123;
+    editor.abort();
+&#125;
+mDiskLruCache.flush();
+</code></pre><p>3.缓存查找</p>
+<pre><code>DiskLruCache.Snapshot snapShot = mDiskLruCache.get(key);
+if(snapShot != null) &#123;
+    FileInputStream fis = (FileInputStream)snapShot.getInputStrean(0);
+    FileDescriptor fd = fis.getFD();
+    //... 
+&#125;
+</code></pre><p>FileInputStream是一种有序的文件流，decodeStream会影响文件流的属性，导致第二次decodeStream为空，可以通过BitmapFactory.decodeFileDescriptor方法来加载一张缩放后的图片。</p>
+<p>4.删除缓存</p>
+<h4 id="ImageLoader的实现"><a href="#ImageLoader的实现" class="headerlink" title="ImageLoader的实现"></a>ImageLoader的实现</h4><p>一个优秀的ImageLoader应该具备的功能:</p>
+<ul>
+<li>图片的同步加载</li>
+<li>图片的异步加载</li>
+<li>图片的压缩</li>
+<li>内存缓存</li>
+<li>磁盘缓存</li>
+<li>网络拉取</li>
+</ul>
+<p>文中的例子使用线程池和Handler来实现的，<a target="_blank" rel="noopener" href="https://github.com/singwhatiwanna/android-art-res/tree/master/Chapter_12/src/com/ryg/chapter_12/loader">示例代码</a>。</p>
+<h4 id="优化列表的卡顿现象"><a href="#优化列表的卡顿现象" class="headerlink" title="优化列表的卡顿现象"></a>优化列表的卡顿现象</h4><p>列表滑动的时候停止加载图片，停止下来在加载图片，可以给ListView或者GridView设置setOnScrillListener，在OnScrollListener的onScrollStateChanged方法中判断列表是否处于滑动状态。</p>
+
+
+
+
+</body>
+</html>

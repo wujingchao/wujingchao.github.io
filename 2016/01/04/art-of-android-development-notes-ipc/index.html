@@ -1,0 +1,274 @@
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    
+<script src="/js/less.min.js"></script>
+
+    
+    
+<link rel="stylesheet" href="/css/main.css">
+
+    
+<link rel="stylesheet" href="/prettify/tomorrow.css">
+
+    
+<script src="/js/jquery-2.1.4.min.js"></script>
+
+    
+<script src="/js/raphael-min.js"></script>
+
+    
+<script src="/js/underscore-min.js"></script>
+
+    
+<script src="/js/sequence-diagram-min.js"></script>
+
+    
+<script src="/js/flowchart-latest.js"></script>
+
+    
+<script src="/prettify/prettify.js"></script>
+
+    
+<script src="/js/common.js"></script>
+
+    
+<script src="/js/gitment.browser.js"></script>
+
+    
+<link rel="stylesheet" href="/css/default.css">
+
+    
+<link rel="stylesheet" href="/lib/fancybox/dist/jquery.fancybox.css">
+
+
+    
+<script src="/lib/fancybox/dist/jquery.fancybox.js"></script>
+
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    
+    
+    <script>
+        (function (i, s, o, g, r, a, m) {
+            i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+                (i[r].q = i[r].q || []).push(arguments)
+            }, i[r].l = 1 * new Date(); a = s.createElement(o),
+                m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
+        })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+        ga('create', 'UA-71897482-1', 'auto');
+        ga('send', 'pageview');
+    </script>
+    
+    
+    <title>读书笔记:IPC机制</title>
+    <meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=0.8, user-scalable=no">
+<meta name="generator" content="Hexo 6.3.0"></head>
+<body>
+
+<h3 id="Android开发艺术探索读书笔记-IPC机制"><a href="#Android开发艺术探索读书笔记-IPC机制" class="headerlink" title="Android开发艺术探索读书笔记: IPC机制"></a><a target="_blank" rel="noopener" href="http://www.amazon.cn/Android%E5%BC%80%E5%8F%91%E8%89%BA%E6%9C%AF%E6%8E%A2%E7%B4%A2-%E4%BB%BB%E7%8E%89%E5%88%9A/dp/B014HV1X3K/ref=sr_1_1?ie=UTF8&amp;qid=1451616304&amp;sr=8-1&amp;keywords=Android%E5%BC%80%E5%8F%91%E8%89%BA%E6%9C%AF%E6%8E%A2%E7%B4%A2">Android开发艺术探索</a>读书笔记: IPC机制</h3><p>　　Android中Binder机制的由四个部分组成:Binder驱动，Client，Server，ServerManager。其中Binder运行在内核空间，其余都运行在用户空间，Client、Server、ServerManager通过open/ioctl与Binder驱动交互。ServerManager用来管理Server并向Client提供了Server接口查询。类比与网络中的通信方式，Client为客户端，Server为服务器端，ServerManager为DNS服务器，Binder驱动做为通信链路，Client向ServerManager查询服务端的地址，并通过Binder驱动与Server建立通信。</p>
+<p>Binder驱动做为进程间的媒介运行在内核空间，通过系统调用向Binder驱动写控制命令+数据，然后等待Binder驱动唤醒然后读取结果数据。通过代理，在Java层调用对象方法就像调用本地方法一样，其实是将要调用的方法与参数封装成特定的数据结构(序列化)，写到内核驱动，服务端再将数据解析(反序列化)，调用方法得到结果写回Binder驱动，客户端再拿到结果。（数据只拷贝一次）</p>
+<p><img src="/assets/Binder架构.gif" alt="Binder架构"> </p>
+<p>(图片来自<a target="_blank" rel="noopener" href="http://blog.csdn.net/luoshengyang/article/details/6618363">老罗的Android之旅</a>)</p>
+<p>Binder机制使用进程虚拟地址空间和内核虚拟地址空间映射同一个物理页面，进程与内核之间就减少了一次内存的拷贝，提高通信的效率。</p>
+<h4 id="Android中的多进程模式"><a href="#Android中的多进程模式" class="headerlink" title="Android中的多进程模式"></a>Android中的多进程模式</h4><p>线程是CPU最小的调度单元，而进程是执行单元，表现为一个应用程序。进程与线程之间是包含关系。</p>
+<ul>
+<li><p>开启多进程的方法有两种:</p>
+<ul>
+<li><p>在AndroidManifest里面指定四大组件中的android:process属性，进程运行的时候，进程名就是包名 + 该属性的值。当进程名以”:”开头代表属于进程的私有进程，其他应用组件不能和他跑在同一个进程中，而进程名不以”:”开头的，其他进程可以可以是哦那个SharedUid的方式与该进程共享数据（data目录，共享内存数据，组件信息）。注SharedUid需要两个应用的签名一致才能使用，要不会导致第二个应用安装不上的情况</p>
+</li>
+<li><p>另外一种方式就是使用JNI在native层fork</p>
+</li>
+</ul>
+</li>
+<li><p>多进程运行机制:<br>  Android系统会为每一个应用或者进程孵化一个独立的虚拟机，不用的虚拟机之间在内存上分配的有不同的地址空间，所以多进程时访问同一个类的对象的时候会产生多个副本，应用程序相当于会创建多次，导致一些情况:</p>
+<ul>
+<li>程序中的组件不在同一个进程会导致共享静态数据失败，以及单例也会失效</li>
+<li>Application会重复创建</li>
+<li>线程同步机制失效</li>
+<li>SharedPrefence的读写可靠性下降</li>
+</ul>
+</li>
+</ul>
+<blockquote>
+<p>应用间的进程相当于两个应用采用ShardUid的模式</p>
+</blockquote>
+<h4 id="IPC基础概念"><a href="#IPC基础概念" class="headerlink" title="IPC基础概念"></a>IPC基础概念</h4><ul>
+<li>Serializable接口:标记接口即没有任何方法，实现这个接口的类可以通过流的方式序列化与反系列化对象，需要注意静态变量不属于某个对象，所以不会参与序列化。如果想让某个成员变量不参与序列化，那么就让这个成员变量加上 transient 这个标识符，我们也可以通过 定义 下面两个方法来控制序列化与反序列的过程(Thinking In Java里作者就痛斥这种Sun的这个实现:P):</li>
+</ul>
+<pre><code class="java"> private void witeObject(OutputStream os)&#123;
+    //...
+ &#125;
+
+ private void readObject(InputStrem is) &#123;
+    //...
+ &#125;
+
+</code></pre>
+<p>另外比较重要的就是serialVersionUID(long)这个常量，根据这个变量名可以知道是序列化的版本号，不写也是可以的，使用这个类的时候系统会给我们生成，利用类的成员变量hash给我们算出来，所以一方面这就加重了系统的负担，不一致的话反序列化就直接抛异常。所以指定这个版本号的情况下，我们增加个成员变量或者减少个成员变量，系统会尽可能地给我们反序列化，但类发生了非常规变化（比如类名变了），还是会抛异常。<br>当序列化的版本号不一致时，反序列化抛的异常是 java.io.InvalideClassException，所以一般我们都指定值为1L，或者使用IDE给我们生成。</p>
+<ul>
+<li><p>Parcelable接口 <a target="_blank" rel="noopener" href="http://www.cnblogs.com/hpboy/archive/2012/07/12/2587797.html">实例</a><br>主要用于Binder之间传递数据</p>
+<ul>
+<li>序列化方法由 writeToParcel(Parcel out,int flags) 提供，Parcel内部包装了可序列化的数据，flags通常为0，当为1的时候表示当前对象需要返回，不能立即释放资源</li>
+<li>反序列化由 CREATOR 完成</li>
+<li>对象内容描述 int describeContents() 通常返回0，如果对象含有文件描述返回1</li>
+<li>与Serializable相比，Serializable虽然简单，序列化和反序列需要大量IO操作，开销大。Parcelable专门是为Android提供的，效率高，推荐使用</li>
+</ul>
+</li>
+<li><p>Binder</p>
+<ul>
+<li>调用Service简单工作流程:</li>
+</ul>
+</li>
+</ul>
+
+    <div class="diagram_sequence">
+        Client->Binder: 远程请求
+        Binder-->Client:挂起
+        Binder-->Binder:写入data
+        Binder->Service:调用transact传递data
+        Service-->ThreadPool:onTransact把服务端方法放\n到线程池执行
+        ThreadPool-->ThreadPool:写入reply
+        ThreadPool-->Binder:返回结果
+        Binder-->Client:唤醒Client并返回数据
+    </div>
+
+<ul>
+<li>检测Binder死亡<ul>
+<li>服务端由于某些原因终止了进程，可以通过Binder提供的两个方法 linkToDeath 和 unlinkToDeath 去接收或取消服务死亡消息的回调。</li>
+<li>isBinderAlive 直接检测Binder是否死亡。</li>
+<li>ServiceConnection 里的 onServiceDisconnected检测。</li>
+</ul>
+</li>
+</ul>
+<p>关于Binder的线程池官方文档有这样的描述:</p>
+<blockquote>
+<p>The system maintains a pool of transaction threads in each process that it runs in. These threads are used to dispatch all IPCs coming in from other processes. For example, when an IPC is made from process A to process B, the calling thread in A blocks in transact() as it sends the transaction to process B. The next available pool thread in B receives the incoming transaction, calls Binder.onTransact() on the target object, and replies with the result Parcel.</p>
+</blockquote>
+<p>我们在AndroidStudio Debug的时候可以直观地看到:<br><img src="/assets/AndroidStudio里面看见的Binder线程池.png" alt="AndroidStudio里面看见的Binder线程池.png"></p>
+<h4 id="Android中的IPC方式"><a href="#Android中的IPC方式" class="headerlink" title="Android中的IPC方式"></a>Android中的IPC方式</h4><ul>
+<li><p>使用Bundle<br>  Activity,Service,BrocastReceiver都支持直接通过 Intent 传递数据，可直接向其写入Parcelable数据，Bunlde本身就实现了Parcelable接口，所以可以通过 key/value 的方式向Bundle写入可以序列化的数据，包括基本数据类型，Parcelable接口的对象，Serializable接口对象等。</p>
+</li>
+<li><p>使用文件共享<br>SharedPerenfences也属于文件，底层使用xml实现，系统有缓存策略，多进程下读写不可靠。</p>
+</li>
+<li><p>使用Messenger</p>
+<ul>
+<li><p>介绍<br>Messenger是基于AIDL并结合Handler做了一层封装，适用于通信协议简单的进程间通信。这种方式使用了Handler，串行执行，所以服务端不用考虑并发执行的情况。</p>
+</li>
+<li><p>使用</p>
+<pre><code class="java">//服务端创建一个Messenger对象，并传入一个Handler对象用于接收客户端发过来的消息
+Messenger messenger = new Messenger(mHandler);
+
+//Messenger里面封装了一个名叫mTarget的Binder对象，把这个对象返回给客户端
+public IBinder onBind(Intent intent) &#123;
+  return messenger.getBinder();
+&#125;
+
+//---------------------------分隔符-------------------------------------
+//客户端绑定服务
+bindService(intent,serviceConnection,BIND_AUTO_CREATE);    
+
+//绑定服务成功的回调连接,通过Messenger的构造方法，把服务端传递过来的Binder转化为一个Messenger,这样就可以向服务端发送消息了
+serviceConnection = new ServiceConnection() &#123;
+  @Override
+  public void onServiceConnected(ComponentName name, IBinder service) &#123;
+      Messenger messenger = new Messenger(service);
+      messenger.send(msg);
+  &#125;
+&#125;;
+
+</code></pre>
+<p>如果需要服务端返回消息那么就可以给服务端传递一个Parcelable对象，里面包含一个<a target="_blank" rel="noopener" href="http://blog.csdn.net/universus/article/details/6211589/">匿名的Binder对象</a>，由于Messenger就是一个Parcelable对象，所以就可以在客户端本地创建一个Messenger对象（同理需要一个Handler对象来接收服务端传递过来的消息），赋给Message.replyTo，在服务端拿到这个对象，就可以想客户端发消息了。</p>
+</li>
+<li><p>补充</p>
+<p>这个就是Messenger封装的那个IMessenger.aidl文件, Android源码里面可以找到，oneway 表示调用方发送消息后不需要等待就可以结束了，即异步消息。 </p>
+<pre><code class="java">import android.os.Message;
+
+/** @hide */
+oneway interface IMessenger &#123;
+  void send(in Message msg);
+&#125;
+</code></pre>
+</li>
+<li><p>Messenger简要调用过程</p>
+
+    <div class="diagram_sequence">
+        Client->Service:bindService
+        Service-->Client:返回一个messenger对象
+        Client->Service:通过messenger发送消息
+        Service-->Handler:分发消息
+    </div>
+    
+</li>
+</ul>
+</li>
+<li><p>使用AIDL</p>
+<ul>
+<li><p>AIDL支持的数据类型</p>
+<ul>
+<li>基本数据类型</li>
+<li>String,Charsequence</li>
+<li>ArrayList(元素必须实现Parcelable)</li>
+<li>HashMap(同理ArrayList)</li>
+<li>Parcelable</li>
+<li>AIDL对象，AIDL接口本身也可以在AIDL中使用</li>
+</ul>
+<p>自定义的Parcelable和AIDL对象都必须显式地 import 进来。如果AIDL文件中用到了自定义的Parcelable对象，就必须新建一个和它同名的AIDL文件，并在其中声明为Parcelable类型，就行这样:</p>
+<pre><code class="java">package io.github.wujingchao.example.aidl;
+parcelable Book;
+</code></pre>
+<p>另外，AIDL中 除了基本数据类型，其他类型的参数必须标上方向:in,out,inout。</p>
+<p>可以使用CopyOnWriteArrayList,ConcurrentHashMap，解决服务端使用集合并发的情况。</p>
+<p>如果想要实现客户端向服务端注册回调的话，使用传统的集合往里面添加我们需要的回调对象，注册与回调都是能正常工作的，当我们反注册回调的时候，服务端就不能从集合里面去掉我们注册的对象。这是因为在进程中传递对象会经过序列化与反序列化的过程，就导致我们两次传递的对象不一致（通过打印对象的hashcode就可以看的出来）。</p>
+<blockquote>
+<p>对象是不能跨进程传输的，对象的跨进程传输本质就是通过序列化与反序列化完成的。</p>
+</blockquote>
+<p>鉴于着用情况Android提供了一个方便的类<a target="_blank" rel="noopener" href="http://developer.android.com/intl/zh-cn/reference/android/os/RemoteCallbackList.html">RemoteCallbackList</a>，专门用于进程回调的（其实也可以自己根据原理做实现）。该类内部有个Map来保存回调对象，key是IBinder类型，（服务端生成不同对象，但是Binder对象是同一个）value是Callback类型，封装我们的真正回调接口。使用RemoteCallbackList有两个好处:</p>
+<ul>
+<li>当客户端进程终止后，它能够自动移除客户端所注册的回调</li>
+<li>内部实现了线程同步</li>
+</ul>
+<pre><code class="java">//遍历callback
+int count = remoteCallbackList.beginBroadcast();
+for(int i = 0; i &lt; count; i ++) &#123;
+      callbackList.getBroadcastItem(i).onMessageArrivied(&quot;hello,client!&quot;);
+  &#125;
+callbackList.finishBroadcast();
+</code></pre>
+<p>客户端调用服务端方法是在服务端的Binder线程池中执行的，如果方法耗时，就不能在UI线程里面去调用，防止ANR，服务端调用客户端的方法同样是在Binder线程池里面执行的。（可以使用oneway在AIDL里面声明Binder对象，里面的方法就是异步调用的了，即调用方调用方法之后直接返回，不需要等待客户端的返回）。</p>
+<p>onServiceConnected 和 onServiceDisconnected 方法是在UI线程里面执行，所以要避免里面执行耗时操作。<br>调用服务端的方法本身就在Binder线程池里面执行的，所以避免在里面开启线程执行请求，去执行异步任务。</p>
+<p>服务端授权认证常用方法:</p>
+<ul>
+<li><p>在onBind里面认证，通过 checkCallingOrSelfPermission(String permission) 检查服务端或者客户端是否有权限调用，没有就直接返回null。先在AndroidManifest声明权限，然后use权限</p>
+</li>
+<li><p>在onTransact，通过 getCallingUid 和 getCallingPid 获取客户端的uid和pid，在通过pid或者uid获取相关客户端的相关信息做验证</p>
+</li>
+<li><p>另外一种常用的方法就是在AndroidManifest里面的Service加上 android:permission 属性，加上我们声明的权限即可</p>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>使用ContentProvider</p>
+<ul>
+<li><p>ContentProvider的实现同样是使用Binder，所以调用方法除了 onCreate 是在主线程里面调用，其他的六个方法（增删改查等）都是在Binder线程中执行的（可以通过打印日志看出来）</p>
+</li>
+<li><p>通过 SQLiteOpenHelper 来管理数据库的创建，升级，降级</p>
+</li>
+<li><p>insert,delete,update,query 存在多线程访问，所以实现要做好同步。单个SQLiteDatabase内部对数据库操作已经有同步处理，多个SQLiteDatabase操作就无法保证。如果提供的数据是内存，比如集合，就需要同步处理并发的操作。</p>
+</li>
+</ul>
+</li>
+<li><p>使用Socket</p>
+</li>
+</ul>
+<h4 id="Binder连接池"><a href="#Binder连接池" class="headerlink" title="Binder连接池"></a>Binder连接池</h4><p>主要思想就是服务端提供获取各类Binder的接口并返回，客户端取得合适的Binder对象，避免创建多个Service。实现代码<a target="_blank" rel="noopener" href="https://github.com/singwhatiwanna/android-art-res/tree/master/Chapter_2/src/com/ryg/chapter_2/binderpool">参考</a>。</p>
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,303 @@
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    
+<script src="/js/less.min.js"></script>
+
+    
+    
+<link rel="stylesheet" href="/css/main.css">
+
+    
+<link rel="stylesheet" href="/prettify/tomorrow.css">
+
+    
+<script src="/js/jquery-2.1.4.min.js"></script>
+
+    
+<script src="/js/raphael-min.js"></script>
+
+    
+<script src="/js/underscore-min.js"></script>
+
+    
+<script src="/js/sequence-diagram-min.js"></script>
+
+    
+<script src="/js/flowchart-latest.js"></script>
+
+    
+<script src="/prettify/prettify.js"></script>
+
+    
+<script src="/js/common.js"></script>
+
+    
+<script src="/js/gitment.browser.js"></script>
+
+    
+<link rel="stylesheet" href="/css/default.css">
+
+    
+<link rel="stylesheet" href="/lib/fancybox/dist/jquery.fancybox.css">
+
+
+    
+<script src="/lib/fancybox/dist/jquery.fancybox.js"></script>
+
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    
+    
+    <script>
+        (function (i, s, o, g, r, a, m) {
+            i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+                (i[r].q = i[r].q || []).push(arguments)
+            }, i[r].l = 1 * new Date(); a = s.createElement(o),
+                m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
+        })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+        ga('create', 'UA-71897482-1', 'auto');
+        ga('send', 'pageview');
+    </script>
+    
+    
+    <title>读书笔记:理解RemoteViews</title>
+    <meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=0.8, user-scalable=no">
+<meta name="generator" content="Hexo 6.3.0"></head>
+<body>
+
+<h3 id="Android开发艺术探索读书笔记-理解RemoteViews"><a href="#Android开发艺术探索读书笔记-理解RemoteViews" class="headerlink" title="Android开发艺术探索读书笔记: 理解RemoteViews"></a><a target="_blank" rel="noopener" href="http://www.amazon.cn/Android%E5%BC%80%E5%8F%91%E8%89%BA%E6%9C%AF%E6%8E%A2%E7%B4%A2-%E4%BB%BB%E7%8E%89%E5%88%9A/dp/B014HV1X3K/ref=sr_1_1?ie=UTF8&amp;qid=1451616304&amp;sr=8-1&amp;keywords=Android%E5%BC%80%E5%8F%91%E8%89%BA%E6%9C%AF%E6%8E%A2%E7%B4%A2">Android开发艺术探索</a>读书笔记: 理解RemoteViews</h3><p>RemoteViews用于跨进程更新View，常用使用场景有:通知栏和桌面widget。</p>
+<h4 id="RemoteViews的两个使用场景"><a href="#RemoteViews的两个使用场景" class="headerlink" title="RemoteViews的两个使用场景"></a>RemoteViews的两个使用场景</h4><p>通知栏的简单使用:</p>
+<pre><code class="java">NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+NotificationCompat.Builder builder = new NotificationCompat.Builder(this);
+PendingIntent intent = PendingIntent.getActivity(this, 0, new Intent(this, SecondActivity.class), PendingIntent.FLAG_UPDATE_CURRENT);
+RemoteViews remoteViews = new RemoteViews(this.getPackageName(),R.layout.notify_content);
+Notification notification = builder.setTicker(&quot;Ticker&quot;)
+        .setOngoing(true)
+        .setTicker(&quot;Ticker&quot;,remoteViews)
+        .setSmallIcon(R.drawable.ic)
+        .setContentText(&quot;ContentText&quot;)
+        .setWhen(System.currentTimeMillis())
+        .setContentTitle(&quot;ContentTitle&quot;)
+        .setContentIntent(intent)
+        .build();
+remoteViews.setTextViewText(R.id.textView,&quot;IIIIIIIIIIIIIII&quot;);
+notification.contentView = remoteViews;
+notificationManager.notify(0,notification);
+</code></pre>
+<p>RemoteView没有像普通View那样有着findViewById方法，只提供了特定的方法来更新，例如 SetTextViewText(R.id.text,”Text”) 后面说明原因。</p>
+<p>AppWigetProvider实质是一个广播，更新Wiget也用到了RemoteViews，使用步骤:</p>
+<ul>
+<li>定义wiget布局文件</li>
+</ul>
+<pre><code class="xml">&lt;RelativeLayout xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;
+    android:layout_width=&quot;match_parent&quot;
+    android:layout_height=&quot;match_parent&quot;
+    android:background=&quot;#09C&quot;
+    android:padding=&quot;@dimen/widget_margin&quot;&gt;
+
+    &lt;TextView
+        android:id=&quot;@+id/appwidget_text&quot;
+        android:layout_width=&quot;wrap_content&quot;
+        android:layout_height=&quot;wrap_content&quot;
+        android:layout_centerHorizontal=&quot;true&quot;
+        android:layout_centerVertical=&quot;true&quot;
+        android:layout_margin=&quot;8dp&quot;
+        android:background=&quot;#09C&quot;
+        android:contentDescription=&quot;@string/appwidget_text&quot;
+        android:text=&quot;@string/appwidget_text&quot;
+        android:textColor=&quot;#ffffff&quot;
+        android:textSize=&quot;24sp&quot;
+        android:textStyle=&quot;bold|italic&quot; /&gt;
+
+&lt;/RelativeLayout&gt;
+</code></pre>
+<ul>
+<li>在res/xml下定义wiget配置信息</li>
+</ul>
+<pre><code class="xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+&lt;appwidget-provider xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;
+    android:initialKeyguardLayout=&quot;@layout/my_app_widget&quot;
+    android:initialLayout=&quot;@layout/my_app_widget&quot;
+    android:minHeight=&quot;40dp&quot;
+    android:minWidth=&quot;40dp&quot;
+    android:previewImage=&quot;@drawable/example_appwidget_preview&quot;
+    android:resizeMode=&quot;horizontal|vertical&quot;
+    android:updatePeriodMillis=&quot;86400000&quot;
+    android:widgetCategory=&quot;home_screen&quot; /&gt;
+</code></pre>
+<ul>
+<li>定义wiget实现类</li>
+</ul>
+<pre><code class="java">public class MyAppWidget extends AppWidgetProvider &#123;
+
+    private static final String TAG = &quot;MyAppWidget&quot;;
+
+    static int index = 0;
+
+    void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) &#123;
+        // Construct the RemoteViews object
+        RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.my_app_widget);
+        views.setTextViewText(R.id.appwidget_text, &quot;Start&quot;);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(context,0,new Intent(&quot;xml.onclick&quot;),PendingIntent.FLAG_UPDATE_CURRENT);
+        views.setOnClickPendingIntent(R.id.appwidget_text,pendingIntent);
+        // Instruct the widget manager to update the widget
+        appWidgetManager.updateAppWidget(appWidgetId, views);
+    &#125;
+    @Override
+    public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) &#123;
+        //widget更新就会调用一次，包括添加以及自动
+        Log.e(TAG,&quot;onUpdate,appWidgetIds = &quot; + Arrays.toString(appWidgetIds));
+        for (int appWidgetId : appWidgetIds) &#123;
+            updateAppWidget(context, appWidgetManager, appWidgetId);
+        &#125;
+    &#125;
+
+    @Override
+    public void onEnabled(Context context) &#123;
+        //第一个widget开启就会被调用
+        Log.e(TAG,&quot;onEnabled&quot;);
+    &#125;
+
+    @Override
+    public void onDisabled(Context context) &#123;
+        //最后一个widget被删除就会被调用
+        Log.e(TAG,&quot;onDisabled&quot;);
+    &#125;
+
+    @Override
+    public void onRestored(Context context, int[] oldWidgetIds, int[] newWidgetIds) &#123;
+        Log.e(TAG,&quot;onRestored,oldWidgetIds = &quot; + Arrays.toString(oldWidgetIds) + &quot;,newWidgetIds = &quot; + Arrays.toString(newWidgetIds));
+    &#125;
+
+    @Override
+    public void onDeleted(Context context, int[] appWidgetIds) &#123;
+        //每删除一个widget就会调用一次
+        Log.e(TAG,&quot;onDeleted,appWidgetIds = &quot; + Arrays.toString(appWidgetIds));
+    &#125;
+
+    @Override
+    public void onReceive(Context context, Intent intent) &#123;
+        //必须调用父类的方法用于分发
+        super.onReceive(context, intent);
+        Log.e(TAG, &quot;onReceive&quot;);
+        if(&quot;xml.onclick&quot;.equals(intent.getAction())) &#123;
+            RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.my_app_widget);
+            PendingIntent pendingIntent = PendingIntent.getBroadcast(context,0,new Intent(&quot;xml.onclick&quot;),PendingIntent.FLAG_UPDATE_CURRENT);
+            views.setOnClickPendingIntent(R.id.appwidget_text,pendingIntent);
+            views.setTextViewText(R.id.appwidget_text, &quot;Index = &quot; + index++);
+            AppWidgetManager.getInstance(context).updateAppWidget(new ComponentName(context,MyAppWidget.class),views);
+        &#125;
+    &#125;
+&#125;
+
+</code></pre>
+<ul>
+<li>在AndroidManifest里面声明widget</li>
+</ul>
+<pre><code class="xml"> &lt;receiver android:name=&quot;xml.MyAppWidget&quot;&gt;
+        &lt;intent-filter&gt;
+            &lt;action android:name=&quot;android.appwidget.action.APPWIDGET_UPDATE&quot; /&gt;
+            &lt;action android:name=&quot;xml.onclick&quot; /&gt;
+        &lt;/intent-filter&gt;
+
+        &lt;meta-data
+            android:name=&quot;android.appwidget.provider&quot;
+            android:resource=&quot;@xml/my_app_widget_info&quot; /&gt;
+&lt;/receiver&gt;
+
+</code></pre>
+<p>功能很简单，就是添加了widget之后，点击widget就会不断地更新wiget上面的文字，我们也可以通过在Activity或者Service里面发广播去更新widget。<br> AndroidStudio 可以直接新建AppWiget并给我们创建模版，上面代码就是 AndroidStudio 给生成后添加的一小段逻辑，如果要着手开发Wiget的话，建议详细阅读<a target="_blank" rel="noopener" href="http://developer.android.com/intl/zh-cn/guide/topics/appwidgets/index.html">官方的教程</a>。</p>
+<h4 id="PendingIntent概述"><a href="#PendingIntent概述" class="headerlink" title="PendingIntent概述"></a>PendingIntent概述</h4><p> PendingIntent可以理解为即将到来的Intent，不是即时发生的，就像上面代码里面给 RemoteViews 设置点击事件，点击之后就发送一个广播。通过 cancel 方法来取消PendingIntent。<br> PendingIntent支持三种意图: 启动Activity ， 启动Service ，发送广播，对应的方法 getActivity，getService，getBroadcast，并且都有4个参数,  (Context context,int requestCode,Intent intent,flags) 。</p>
+<p> PendingIntent匹配规则为内部的Intent(只比较CompontName和intent-filter，不包括Extras)和requestCode相同即可。</p>
+<p> flags的可选参数:</p>
+<ul>
+<li>FLAG_ONE_SHOT<br>当前的PendingIntent只能使用一次，自动cancel，后续有相同的PendingIntent（根据前面的匹配规则）就会send失败</li>
+<li>FLAG_NO_CREATE<br>如果之前的PendingIntent不存在，那么getActivity，getService，getBroadcast就会返回null</li>
+<li>FLAG_CANCEL_CURRENT<br>如果PendingIntent已经存在，那么就会被canel即不可用了，新建一个代替</li>
+<li>FLAG_UPDATE_CURRENT<br>如果PendingIntent已经存在，那么会被更新，替换Intent中的Extras</li>
+</ul>
+<p>对于NotifycationManget#notify(int id, Notification notification), 如果第一个参数是一个常量，多次调用notify只能弹出一个通知，后续的通知就会被替换掉，如果不是常量，多次调用就会弹出多个通知。</p>
+<h4 id="RemoteViews的内部机制"><a href="#RemoteViews的内部机制" class="headerlink" title="RemoteViews的内部机制"></a>RemoteViews的内部机制</h4><blockquote>
+<p>A class that describes a view hierarchy that can be displayed in another process. The hierarchy is inflated from a layout resource file, and this class provides some basic operations for modifying the content of the inflated hierarchy.</p>
+</blockquote>
+<p>目前RemoteViews支持的类型:（不支持自定义View的他们的子类）</p>
+<ul>
+<li><p>Layout<br>FrameLayout LineraLayout RelativeLayout GridLayout</p>
+</li>
+<li><p>View<br>AnalogClock Button Chronometer ImageButton ImageView ProgressBar TextView ViewFlipper ListView GridView StackView AdapterViewFlipper ViewStub<br>使用其他的不支持的控件会抛InflateException。</p>
+</li>
+</ul>
+<p>RemoteViews的典型方法:</p>
+<pre><code class="java">setTextView(int viewId,Charsquence text); //设置TextView的文本
+setInt(int viewId,String methodName,int value);//反射调用View对象参数为int类型的方法
+setOnClickPendingIntent(int viewId,PendingIntent pendingIntent);//为View添加单击事件，事件类型只能为PendingIntent
+</code></pre>
+<p>我们先看一下updateWidget的调用过程:</p>
+<p>MyAppWidget.java:</p>
+<pre><code class="java">void updateAppWidget(Context context, AppWidgetManager appWidgetManager, int appWidgetId) &#123;
+    RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.my_app_widget);
+    views.setTextViewText(R.id.appwidget_text, &quot;Start&quot;);
+    appWidgetManager.updateAppWidget(appWidgetId, views);
+&#125;
+</code></pre>
+<p>RemoteViews.java:</p>
+<pre><code class="java">
+public void setTextViewText(int viewId, CharSequence text) &#123;
+    setCharSequence(viewId, &quot;setText&quot;, text);
+&#125;
+
+public void setCharSequence(int viewId, String methodName, CharSequence value) &#123;
+    addAction(new ReflectionAction(viewId, methodName, ReflectionAction.CHAR_SEQUENCE, value));
+&#125;
+
+private void addAction(Action a) &#123;
+    //...
+    if (mActions == null) &#123;
+        mActions = new ArrayList&lt;Action&gt;();
+    &#125;
+    mActions.add(a);
+    //...
+&#125;
+
+</code></pre>
+<p>AppWidgetManager.java:</p>
+<pre><code class="java">
+private final IAppWidgetService mService;
+
+public void updateAppWidget(int appWidgetId, RemoteViews views) &#123;
+    if (mService == null) &#123;
+        return;
+    &#125;
+    updateAppWidget(new int[] &#123; appWidgetId &#125;, views);
+&#125;
+
+public void updateAppWidget(int[] appWidgetIds, RemoteViews views) &#123;
+    if (mService == null) &#123;
+        return;
+    &#125;
+    try &#123;
+        mService.updateAppWidgetIds(mPackageName, appWidgetIds, views);
+    &#125;
+    catch (RemoteException e) &#123;
+        throw new RuntimeException(&quot;system server dead?&quot;, e);
+    &#125;
+&#125;
+</code></pre>
+<p>可以看得出来我们调用set方法给RemoteViews更新的时候，并没有真正的更新，而是把我们的操作添加到了一个 Action 的List里面，并且Action与RemoteViews都实现了Parcelable接口，就是用来进程间通信的。真正更新的的操作就是调用IAppWidgetService服务的操作，Notification也是利用这种类似的机制。</p>
+<p>Notification和Widget是由NotificationManager和AppWidgetManager管理的，而NotificationManager和AppWidgetManager内部通过Binder机制(调用Service)和运行在SystemServer进程的NotifycationManagerService和AppWidgetService进行交互，完成我们的界面加载和更新。实质上我们定义的Notification和Widget在被SystemService加载和更新的。</p>
+<p>这种批量更新的方式减轻了IPC的负担，因为我们很有可能一次更新View的很多内容。</p>
+<p>上面只是介绍了客户端的基本调用行为，服务端则会调用apply或reapply来批量我们的操作并使用反射调用我们set的方法来更新我们的View，书中讲的不是很透彻，需要深入研究可以参考这<a target="_blank" rel="noopener" href="http://blog.csdn.net/thl789/article/category/1367047">几篇博客</a>。</p>
+<blockquote>
+<p>apply会加载布局并更新界面,reapply则只会更新界面</p>
+</blockquote>
+<p>RemoteViews的其他用途就是进程间更新View，例如Service和Activity不在同一个进程，有Service更新Activity的需求，就可以使用RemoteViews，感觉实际开发中不是很常用，具体参考作者的<a target="_blank" rel="noopener" href="https://github.com/singwhatiwanna/android-art-res/blob/master/Chapter_5/src/com/ryg/chapter_5/MainActivity.java">示例代码</a>, 核心就是通过Intent的Extras存储我们的添加Action的RemoteViews，在接收方获取这个对象，调用apply或reapply就可以得到或者更新View。</p>
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,131 @@
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    
+<script src="/js/less.min.js"></script>
+
+    
+    
+<link rel="stylesheet" href="/css/main.css">
+
+    
+<link rel="stylesheet" href="/prettify/tomorrow.css">
+
+    
+<script src="/js/jquery-2.1.4.min.js"></script>
+
+    
+<script src="/js/raphael-min.js"></script>
+
+    
+<script src="/js/underscore-min.js"></script>
+
+    
+<script src="/js/sequence-diagram-min.js"></script>
+
+    
+<script src="/js/flowchart-latest.js"></script>
+
+    
+<script src="/prettify/prettify.js"></script>
+
+    
+<script src="/js/common.js"></script>
+
+    
+<script src="/js/gitment.browser.js"></script>
+
+    
+<link rel="stylesheet" href="/css/default.css">
+
+    
+<link rel="stylesheet" href="/lib/fancybox/dist/jquery.fancybox.css">
+
+
+    
+<script src="/lib/fancybox/dist/jquery.fancybox.js"></script>
+
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    
+    
+    <script>
+        (function (i, s, o, g, r, a, m) {
+            i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+                (i[r].q = i[r].q || []).push(arguments)
+            }, i[r].l = 1 * new Date(); a = s.createElement(o),
+                m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
+        })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+        ga('create', 'UA-71897482-1', 'auto');
+        ga('send', 'pageview');
+    </script>
+    
+    
+    <title>最简单的SSH / Frp内网穿透配置</title>
+    <meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=0.8, user-scalable=no">
+<meta name="generator" content="Hexo 6.3.0"></head>
+<body>
+
+<h3 id="最简单的Ubuntu-SSH-Frp内网穿透配置"><a href="#最简单的Ubuntu-SSH-Frp内网穿透配置" class="headerlink" title="最简单的Ubuntu SSH / Frp内网穿透配置"></a>最简单的Ubuntu SSH / Frp内网穿透配置</h3><p>内网：家里或者公司的机器</p>
+<p>公网：云服务器</p>
+<p>外网：需要访问内网的机器</p>
+<h3 id="SSH"><a href="#SSH" class="headerlink" title="SSH"></a>SSH</h3><h5 id="公网服务器配置"><a href="#公网服务器配置" class="headerlink" title="公网服务器配置"></a>公网服务器配置</h5><p>修改sshd配置/etc/ssh/sshd_config</p>
+<pre><code>GatewayPorts yes
+</code></pre><p>除了开放sshd用的端口，还需要开放一个[公网服务器开放端口]，用作转发数据</p>
+<h5 id="内网"><a href="#内网" class="headerlink" title="内网"></a>内网</h5><p>为了能够断开自动重连，安装autossh(ubuntu)</p>
+<pre><code>sudo apt-get install autossh
+</code></pre><p>与公网服务器建立连接通道</p>
+<pre><code>autossh -M [内网任意未使用端口] -NR [公网服务器开放端口]:127.0.0.1:[本地sshd端口] [公网服务器用户名]@[公网ip]
+
+//提示输入公网服务器密码
+</code></pre><p>-M 后面的这个参数端口貌似用echo service做监听重连的，没太看明白</p>
+<p>-N  Do not execute a remote command.  This is useful for just forwarding ports</p>
+<p>-R Specifies that connections to the given TCP port or Unix socket on the remote (server) host are to be forwarded to the local side</p>
+<p>这样配置好以后，外网连上的[公网服务器开放端口]的数据就会转发到内网的[本地sshd端口]</p>
+<h5 id="外网配置"><a href="#外网配置" class="headerlink" title="外网配置"></a>外网配置</h5><p>上面两部配置完成之后就可以远程ssh到内网了</p>
+<pre><code>ssh [内网用户名]@[公网ip] -p [公网服务器开放端口]
+//提示输入内网服务器密码
+</code></pre><p>使用ssh开启隧道代理：</p>
+<pre><code>ssh -nNTf -D [本地上网代理端口] [内网用户名]@[公网ip] -p [公网服务器开放端口]
+</code></pre><p>同样，可以使用autossh断连之后自动重连。需要把-nNTf参数放到后面，否则会将-f误认为是autossh的参数，无法提示输入密码：</p>
+<pre><code>autossh -M 0  -D [本地上网代理端口]  [内网用户名]@[公网ip] -p [公网服务器开放端口] -nNTf
+</code></pre><p>有时候使用autossh也会断开，可以在/etc/ssh/config加上</p>
+<pre><code>ServerAliveInterval 60 
+</code></pre><p>那么就会每隔60s,就会发一次消息，确保在线。如果还想继续处理其他未知的情况，使用暴力不断重连的命令</p>
+<pre><code>while true; do [ssh链接命令]; sleep 5;done
+</code></pre><p>这样就开启了socket5协议代理，将浏览器或应用的代理设置为sockets://127.0.0.1:[本地上网代理端口]， 就可以成功穿透到内网了！</p>
+<h3 id="Frp"><a href="#Frp" class="headerlink" title="Frp"></a>Frp</h3><p>发现有时候不稳定的时候ssh老是断开导致公网的服务器转发端口有时候监听失败，看了下Frp配置也比较简单，目前看来比较稳定。</p>
+<h4 id="公网服务器配置-1"><a href="#公网服务器配置-1" class="headerlink" title="公网服务器配置"></a>公网服务器配置</h4><p>首先去Frp项目<a target="_blank" rel="noopener" href="https://github.com/fatedier/frp/releases">下载</a>release软件，不同的操作系统都有包含，服务端和客户端都在一个包里面。</p>
+<p>下载之后解压，配置服务端的配置文件 frps.ini</p>
+<pre><code>[common]
+bind_port = &#123;frp监听端口&#125;
+dashboard_port = &#123;控制台端口，用作http协议访问&#125;
+dashboard_user = &#123;控制台用户名&#125;
+dashboard_pwd = &#123;控制台密码&#125;
+authentication_method = token
+token = &#123;用于frp客户端访问验证&#125;
+</code></pre><p>之后直接运行可执行文件frps即可</p>
+<h4 id="内网服务器配置"><a href="#内网服务器配置" class="headerlink" title="内网服务器配置"></a>内网服务器配置</h4><p>客户端配置文件frpc.ini:</p>
+<pre><code>[common]
+server_addr = &#123;frp服务端公网ip&#125;
+server_port = &#123;frp服务端监听端口&#125;
+token= &#123;frp服务端访问令牌&#125;
+
+[ssh-mac] &#123;不同的客户端需要有不同的名字&#125;
+type = tcp
+local_ip = 127.0.0.1
+local_port = &#123;sshd监听端口&#125;
+remote_port = &#123;用于转发数据的端口&#125;
+use_encryption = true
+use_compression = true
+</code></pre><p>之后直接运行可执行文件frpc即可</p>
+<h4 id="外网配置-1"><a href="#外网配置-1" class="headerlink" title="外网配置"></a>外网配置</h4><p>上面两部配置好之后，就可以通过remote_port ssh到内网了，按照前面的命令配置ssh隧道代理！</p>
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,146 @@
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    
+<script src="/js/less.min.js"></script>
+
+    
+    
+<link rel="stylesheet" href="/css/main.css">
+
+    
+<link rel="stylesheet" href="/prettify/tomorrow.css">
+
+    
+<script src="/js/jquery-2.1.4.min.js"></script>
+
+    
+<script src="/js/raphael-min.js"></script>
+
+    
+<script src="/js/underscore-min.js"></script>
+
+    
+<script src="/js/sequence-diagram-min.js"></script>
+
+    
+<script src="/js/flowchart-latest.js"></script>
+
+    
+<script src="/prettify/prettify.js"></script>
+
+    
+<script src="/js/common.js"></script>
+
+    
+<script src="/js/gitment.browser.js"></script>
+
+    
+<link rel="stylesheet" href="/css/default.css">
+
+    
+<link rel="stylesheet" href="/lib/fancybox/dist/jquery.fancybox.css">
+
+
+    
+<script src="/lib/fancybox/dist/jquery.fancybox.js"></script>
+
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    
+    
+    <script>
+        (function (i, s, o, g, r, a, m) {
+            i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+                (i[r].q = i[r].q || []).push(arguments)
+            }, i[r].l = 1 * new Date(); a = s.createElement(o),
+                m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
+        })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+        ga('create', 'UA-71897482-1', 'auto');
+        ga('send', 'pageview');
+    </script>
+    
+    
+    <title>详解Socket编程---TCP_NODELAY选项</title>
+    <meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=0.8, user-scalable=no">
+<meta name="generator" content="Hexo 6.3.0"></head>
+<body>
+
+<h3 id="详解Socket编程—TCP-NODELAY选项"><a href="#详解Socket编程—TCP-NODELAY选项" class="headerlink" title="详解Socket编程—TCP_NODELAY选项"></a>详解Socket编程—TCP_NODELAY选项</h3><h4 id="Nagle算法描述"><a href="#Nagle算法描述" class="headerlink" title="Nagle算法描述"></a>Nagle算法描述</h4><p>Socket编程中，TCP_NODELAY选项是用来控制是否开启Nagle算法，该算法是为了提高较慢的广域网传输效率，减小小分组的报文个数，完整描述：</p>
+<blockquote>
+<p>该算法要求一个TCP连接上最多只能有一个未被确认的小分组，在该小分组的确认到来之前，不能发送其他小分组。</p>
+</blockquote>
+<p>这里的小分组指的是报文长度小于MSS(Max Segment Size)长度的分组（MSS是在TCP握手的时候在报文选项里面进行通告的大小，主要是用来限制另一端发送数据的长度，防止IP数据包被分段，提高效率，一般是链路层的传输最大传输单元大小减去IP首部与TCP首部大小）。</p>
+<p>如果小分组的确认ACK一直没有回来，那么就可能会触发TCP超时重传的定时器。</p>
+<p>下面是一个简单的示意图，开启了Nagle算法与没有开启：</p>
+<p><img src="/assets/nagle_1.png?imageView2/2/w/500/h/420/q/100" alt="nagle"></p>
+<h4 id="抓包分析"><a href="#抓包分析" class="headerlink" title="抓包分析"></a>抓包分析</h4><h5 id="默认开启Nagle算法"><a href="#默认开启Nagle算法" class="headerlink" title="默认开启Nagle算法"></a>默认开启Nagle算法</h5><p>由于局域网内延迟低，不容易看到开启Nagle算法的效果，所以专门整个腾讯云的服务器测试，延迟在40毫秒左右。</p>
+<p><img src="/assets/tcp_nodelay_ping.png" alt="ping"></p>
+<p>Java代码与Unix C的Socket接口类似，这里使用Java代码作为示例简单一点。默认情况下Nagle算法是开启的，即socket.getTcpNoDelay()返回的数值为false，我们先分析这种场景。</p>
+<p>Receiver的代码：</p>
+<pre><code>try (ServerSocket serverSocket = new ServerSocket()) &#123;
+    serverSocket.bind(new InetSocketAddress(10086));//wildcard ip
+    Socket socket = serverSocket.accept();
+    System.out.println(&quot;Accept New Socket&quot;);
+    System.out.println(&quot;Tcp No Delay : &quot; + socket.getTcpNoDelay());
+    InputStream is = socket.getInputStream();
+    OutputStream os = socket.getOutputStream();
+    int result;
+    while((result = is.read()) != -1) &#123;
+        System.out.println((char)result);
+    &#125;
+    TimeUnit.MINUTES.sleep(1);
+&#125;
+</code></pre><p>Sender的代码：</p>
+<pre><code>try(Socket socket = new Socket()) &#123;
+    socket.connect(new InetSocketAddress(&quot;212.64.20.XX&quot;, 10086));
+    System.out.println(&quot;Tcp No Delay : &quot; + socket.getTcpNoDelay());
+    InputStream is = socket.getInputStream();
+    OutputStream os = socket.getOutputStream();
+    for (byte c : &quot;TCP_NO_DELAY&quot;.getBytes()) &#123;
+        TimeUnit.MILLISECONDS.sleep(10);
+        os.write(c);
+        os.flush();
+    &#125;
+    TimeUnit.MINUTES.sleep(1);
+&#125; catch (IOException e) &#123;
+    e.printStackTrace();
+&#125;
+</code></pre><p>与服务器的延时在40毫秒左右，所以Sender这里每隔10毫秒就发送一次就可以演示出累计的小分组在收到ACK后才发送。注意如果是TCP发送的数据延迟还包含链路来回的延迟与Receiver捎带确认的延迟。</p>
+<p>这里抓包工具使用的是tcpdump，导出pcap文件后再使用wireshark观察发送与接收数据的过程。</p>
+<pre><code>$ sudo tcpdump -v port 10086 -w TCP_DELAY.pcap
+
+</code></pre><p><img src="/assets/tcp_nodelay_cap1.png" alt="cap"></p>
+<ul>
+<li><p>首先第一行到第三行是TCP三次握手的报文，可以看到双方都各自通告的MSS大小，发送端的报文小于这个大小就可以理解为小分组</p>
+</li>
+<li><p>第四行是Sender向Receiver发送的第一个字符’T’，对应的Len=1</p>
+</li>
+<li><p>第五行是Receiver回来对第四行发送消息的确认ACK</p>
+</li>
+<li><p>第六行，前面使用ping测试的延迟在40毫秒左右，而我们每10毫秒就会一个字符写到OS维护的发送缓冲区，所以确认ACK回来后，就已经累计了4个字符”CP_N”，发送的数据就是这4个字符</p>
+</li>
+<li><p>之后的流程和上面的类似，可能会出现发送不是4个字符的情况，出现的原因就是延迟可能小于或者大于40毫秒</p>
+</li>
+</ul>
+<p>下面是使用wireshark导出的时序图帮助进一步帮助理解这个流程。</p>
+<p><img src="/assets/tcp_nodelay_flow1.png?imageView2/2/w/474/h/375/q/100" alt="flow"></p>
+<h5 id="关闭Nagle算法"><a href="#关闭Nagle算法" class="headerlink" title="关闭Nagle算法"></a>关闭Nagle算法</h5><p>只需要在发送数据之前对Socket调用一个简单的方法就可以关闭Nagle算法：</p>
+<pre><code>socket.setTcpNoDelay(true);
+</code></pre><p>直接抓包，看下报文：</p>
+<p><img src="/assets/tcp_nodelay_cap2.png" alt="cap"></p>
+<p>可以看到，在Sender每10毫秒发送一个字符，不需要等到Receiver发送确认ACK，就继续发送，没有将数据放到OS维护的缓冲区。</p>
+<p>下面是使用wireshark导出的时序图：</p>
+<p><img src="/assets/tcp_nodelay_flow2.png?imageView2/2/w/800/h/800/q/100" alt="flow"></p>
+<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><p>这个选项应该根据适合的场景进行判断关闭与否，例如实时性要求比较高的场景，类似用户鼠标操作，键盘输入，触摸屏事件输入，状态更新等这种连续的小分组数据，需要在对端立刻呈现，让用户尽可能感受不到延迟。但是如果网络延迟比较高，采用这种方式，那么会导致网路利用率下降。</p>
+<p>一般类似HTTP协议请求响应的模型的场景不太需要考虑禁用这个算法，因为在一条TCP连接上发送小报文，不管多小都代表了服务端任务执行的指示，完成了这个请求之后才能继续执行下一个请求，即使Sender端提前发送过去也没有作用，所以开启Nagle算法是能够优化网络传输的，并且在Receiver端有捎带延迟确认，省掉单独的ACK确认进一步优化小分组传输。</p>
+<p>另外HTTP2与HTTP协议不同，HTTP2是在一条TCP连接上进行所有HTTP请求，并且请求头部是压缩的就进一步加大了请求小分组的可能性，多个小分组HTTP请求并且分组大小的和小于MSS就会导致有延迟的现象，所以HTTP2的实现TCP_NODELAY选项是默认开启的。关于这点可以<a href="(https://http2.github.io/faq/#Will%20I%20need%20TCP_NODELAY%20for%20my%20HTTP/2%20connections">参考HTTP2对TCP_NODELAY的描述</a>)。</p>
+
+
+
+
+</body>
+</html>

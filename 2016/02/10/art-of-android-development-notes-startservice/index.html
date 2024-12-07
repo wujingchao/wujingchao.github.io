@@ -1,0 +1,995 @@
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    
+<script src="/js/less.min.js"></script>
+
+    
+    
+<link rel="stylesheet" href="/css/main.css">
+
+    
+<link rel="stylesheet" href="/prettify/tomorrow.css">
+
+    
+<script src="/js/jquery-2.1.4.min.js"></script>
+
+    
+<script src="/js/raphael-min.js"></script>
+
+    
+<script src="/js/underscore-min.js"></script>
+
+    
+<script src="/js/sequence-diagram-min.js"></script>
+
+    
+<script src="/js/flowchart-latest.js"></script>
+
+    
+<script src="/prettify/prettify.js"></script>
+
+    
+<script src="/js/common.js"></script>
+
+    
+<script src="/js/gitment.browser.js"></script>
+
+    
+<link rel="stylesheet" href="/css/default.css">
+
+    
+<link rel="stylesheet" href="/lib/fancybox/dist/jquery.fancybox.css">
+
+
+    
+<script src="/lib/fancybox/dist/jquery.fancybox.js"></script>
+
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    
+    
+    <script>
+        (function (i, s, o, g, r, a, m) {
+            i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+                (i[r].q = i[r].q || []).push(arguments)
+            }, i[r].l = 1 * new Date(); a = s.createElement(o),
+                m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
+        })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+        ga('create', 'UA-71897482-1', 'auto');
+        ga('send', 'pageview');
+    </script>
+    
+    
+    <title>读书笔记:startService方式启动Service</title>
+    <meta name="viewport" content="width=device-width, initial-scale=0.8, maximum-scale=0.8, user-scalable=no">
+<meta name="generator" content="Hexo 6.3.0"></head>
+<body>
+
+<h3 id="Android开发艺术探索-四大组件的工作过程之startService方式启动Service"><a href="#Android开发艺术探索-四大组件的工作过程之startService方式启动Service" class="headerlink" title="Android开发艺术探索:四大组件的工作过程之startService方式启动Service"></a><a target="_blank" rel="noopener" href="http://www.amazon.cn/Android%E5%BC%80%E5%8F%91%E8%89%BA%E6%9C%AF%E6%8E%A2%E7%B4%A2-%E4%BB%BB%E7%8E%89%E5%88%9A/dp/B014HV1X3K/ref=sr_1_1?ie=UTF8&amp;qid=1451616304&amp;sr=8-1&amp;keywords=Android%E5%BC%80%E5%8F%91%E8%89%BA%E6%9C%AF%E6%8E%A2%E7%B4%A2">Android开发艺术探索</a>:四大组件的工作过程之startService方式启动Service</h3><p>Service计算型组件，用于后台执行一系列计算任务。<br>启动Service可以在当前进程里面启动，也可以在在新进程里面启动，启动服务的方式有两种startService和bindService。</p>
+<p>下面分析新进程里startService的这种情况，对应的<a href="/assets/startService的流程.png">时序图</a>。主要生命周期为onCreate，onStartCommand，onDestroy:</p>
+<h4 id="onCreate"><a href="#onCreate" class="headerlink" title="onCreate"></a>onCreate</h4><p>startService的入口在ContextImpl里:</p>
+<pre><code>@Override
+public ComponentName startService(Intent service) &#123;
+    warnIfCallingFromSystemProcess();//系统启动打印日志
+    return startServiceCommon(service, mUser);
+&#125;
+</code></pre><p>startServiceCommon里面调用validateServiceIntent方法验证我们的Intent，在Android 5.0以后就不能使用隐式意图来启动Service，如果某些情况下还是需要隐式意图，通过给Intent设置Component或者Package就可以避免抛异常。</p>
+<pre><code>private ComponentName startServiceCommon(Intent service, UserHandle user) &#123;
+    try &#123;
+        validateServiceIntent(service);//验证Intent
+        ComponentName cn = ActivityManagerNative.getDefault().startService(
+            mMainThread.getApplicationThread(), service,
+            service.resolveTypeIfNeeded(getContentResolver()), user.getIdentifier());
+        //...
+        return cn;
+    &#125; catch (RemoteException e) &#123;
+        return null;
+    &#125;
+&#125;
+
+private void validateServiceIntent(Intent service) &#123;
+    if (service.getComponent() == null &amp;&amp; service.getPackage() == null) &#123;
+        if (getApplicationInfo().targetSdkVersion &gt;= Build.VERSION_CODES.LOLLIPOP) &#123;
+            IllegalArgumentException ex = new IllegalArgumentException(
+                    &quot;Service Intent must be explicit: &quot; + service);
+            throw ex;
+        &#125; 
+        //...
+    &#125;
+&#125;
+
+</code></pre><p>之后通过ActivityManagerNative.getDefault()获得ActivityManagerProxy，通过ActivityManagerProxy向ActivityManagerService发起IPC调用，第一个参数的ApplicationThread是ActivityThread里面的成员变量。</p>
+<pre><code>//ActivityManagerProxy.java:
+public ComponentName startService(IApplicationThread caller, Intent service,
+        String resolvedType, int userId) throws RemoteException
+&#123;
+    Parcel data = Parcel.obtain();
+    Parcel reply = Parcel.obtain();
+    data.writeInterfaceToken(IActivityManager.descriptor);
+    data.writeStrongBinder(caller != null ? caller.asBinder() : null);
+    service.writeToParcel(data, 0);
+    data.writeString(resolvedType);
+    data.writeInt(userId);
+    mRemote.transact(START_SERVICE_TRANSACTION, data, reply, 0);
+    reply.readException();
+    ComponentName res = ComponentName.readFromParcel(reply);
+    data.recycle();
+    reply.recycle();
+    return res;
+&#125;
+</code></pre><p>然后进入到ActivityManagerService里:</p>
+<pre><code>//ActivityManagerService.java
+
+final ActiveServices mServices;
+
+@Override
+public ComponentName startService(IApplicationThread caller, Intent service,
+        String resolvedType, int userId) &#123;
+    //...
+    synchronized(this) &#123;
+        final int callingPid = Binder.getCallingPid();
+        final int callingUid = Binder.getCallingUid();
+        final long origId = Binder.clearCallingIdentity();
+        ComponentName res = mServices.startServiceLocked(caller, service,
+                resolvedType, callingPid, callingUid, userId);
+        Binder.restoreCallingIdentity(origId);
+        return res;
+    &#125;
+&#125;
+</code></pre><p>ActiveServices用来管理Service，然后调用startServiceLocked:</p>
+<pre><code>//ActiveServices.java
+ComponentName startServiceLocked(IApplicationThread caller,
+        Intent service, String resolvedType,
+        int callingPid, int callingUid, int userId) &#123;
+   final boolean callerFg;
+    if (caller != null) &#123;//不为空
+        final ProcessRecord callerApp = mAm.getRecordForAppLocked(caller);
+        if (callerApp == null) &#123;
+            throw new SecurityException(
+                    &quot;Unable to find app for caller &quot; + caller
+                    - &quot; (pid=&quot; + Binder.getCallingPid()
+                    - &quot;) when starting service &quot; + service);
+        &#125;
+        callerFg = callerApp.setSchedGroup != Process.THREAD_GROUP_BG_NONINTERACTIVE;//false
+    &#125; else &#123;
+        callerFg = true;
+    &#125;
+    //ServiceRecord表示一个Service实例
+    //PackageManagerService解析出Intent得到要启动的ServiceRecord
+    ServiceLookupResult res =
+        retrieveServiceLocked(service, resolvedType,
+                callingPid, callingUid, userId, true, callerFg);
+    //...
+    ServiceRecord r = res.record;
+    //...
+    r.lastActivity = SystemClock.uptimeMillis();
+    r.startRequested = true;
+    r.delayedStop = false;
+    //ServiceRecord.StartItem表示startService的一次调用，并生成startId，stopService使用
+    r.pendingStarts.add(new ServiceRecord.StartItem(r, false, r.makeNextStartId(),
+            service, neededGrants));
+
+    final ServiceMap smap = getServiceMap(r.userId);
+    boolean addToStarting = false;
+    //ProcessRecord表示一个正在运行的进程实例
+    //新进程里面的ProcessRecord为空
+    if (!callerFg &amp;&amp; r.app == null &amp;&amp; mAm.mStartedUsers.get(r.userId) != null) &#123;
+        ProcessRecord proc = mAm.getProcessRecordLocked(r.processName, r.appInfo.uid, false);
+        if (proc == null || proc.curProcState &gt; ActivityManager.PROCESS_STATE_RECEIVER) &#123;
+            if (r.delayed) &#123;
+                return r.name;
+            &#125;
+            //超过单用户最大启动Service的数量，延迟启动
+            if (smap.mStartingBackground.size() &gt;= mMaxStartingBackground) &#123;
+                smap.mDelayedStartList.add(r);
+                r.delayed = true;
+                return r.name;
+            &#125;
+            addToStarting = true;
+        &#125; else if (proc.curProcState &gt;= ActivityManager.PROCESS_STATE_SERVICE) &#123;
+            addToStarting = true;
+        &#125; 
+        //...
+
+    return startServiceInnerLocked(smap, service, r, callerFg, addToStarting);
+&#125;
+</code></pre><p>ServiceRecord表示一个Service实例，ServiceRecord.StartItem表示startService的一次调用，并生成startId，stopService使用，ServiceMap用来映射userId与之对应的Service，之后调用startServiceInnerLocked，ServiceRecord.startRequested为true，callerFg为false(这里假设是从Activity里面启动)，addToStarting为true:</p>
+<pre><code>ComponentName startServiceInnerLocked(ServiceMap smap, Intent service,
+        ServiceRecord r, boolean callerFg, boolean addToStarting) &#123;
+    //...
+    r.callStart = false;
+    String error = bringUpServiceLocked(r, service.getFlags(), callerFg, false);
+    //...
+    return r.name;
+&#125;
+</code></pre><p>之后调用bringUpServiceLocked，callerFg为false:</p>
+<pre><code>//execInFg为false，whileRestarting为false
+
+private final String bringUpServiceLocked(ServiceRecord r,
+        int intentFlags, boolean execInFg, boolean whileRestarting) &#123;
+    //如果进程已经存在的情况下就不是处理下面的流程，直接处理onStart的流程
+    if (r.app != null &amp;&amp; r.app.thread != null) &#123;
+        sendServiceArgsLocked(r, execInFg, false);
+        return null;
+    &#125;
+    //处于restart的状态(在onStartCommand里面处理了服务被杀之后的行为)也不会处理
+    if (!whileRestarting &amp;&amp; r.restartDelay &gt; 0) &#123;
+        return null;
+    &#125;
+    if (mRestartingServices.remove(r)) &#123;
+        clearRestartingIfNeededLocked(r);
+    &#125;
+    if (r.delayed) &#123;
+        getServiceMap(r.userId).mDelayedStartList.remove(r);
+        r.delayed = false;
+    &#125;
+    //...
+    final boolean isolated = (r.serviceInfo.flags&amp;ServiceInfo.FLAG_ISOLATED_PROCESS) != 0;
+    final String procName = r.processName;
+    ProcessRecord app;
+    //独立的进程运行isolated为true
+    if (!isolated) &#123;
+        app = mAm.getProcessRecordLocked(procName, r.appInfo.uid, false);
+        if (app != null &amp;&amp; app.thread != null) &#123;
+            try &#123;
+                app.addPackage(r.appInfo.packageName, r.appInfo.versionCode, mAm.mProcessStats);
+                //直接启动服务，不用开启新的进程
+                realStartServiceLocked(r, app, execInFg);
+                return null;
+            &#125; catch (RemoteException e) &#123;
+                Slog.w(TAG, &quot;Exception when starting service &quot; + r.shortName, e);
+            &#125;
+        &#125;
+    &#125; else &#123;
+        app = r.isolatedProc;
+    &#125;
+
+    if (app == null) &#123;
+        //开启新的进程
+        if ((app=mAm.startProcessLocked(procName, r.appInfo, true, intentFlags,
+                &quot;service&quot;, r.name, false, isolated, false)) == null) &#123;
+            bringDownServiceLocked(r);
+            return msg;
+        &#125;
+        if (isolated) &#123;
+            r.isolatedProc = app;
+        &#125;
+    &#125;
+    //将ServiceRecord加入即将启动mPendingServices列表里，后面进程启动成功后在启动Service
+    if (!mPendingServices.contains(r)) &#123;
+        mPendingServices.add(r);
+    &#125;
+    //...
+
+    return null;
+&#125;
+</code></pre><p>如果进程已经存在的情况下就不是处理下面的流程，直接调用realStartServiceLocked处理onStart的流程。<br>ActivityManagerService.startProcessLocked开启进程，procName为AndroidManifest中Service标签了process指定的进程名，默认是包名。</p>
+<pre><code>//ActivityManagerService.java
+
+//knownToBeDead为true，hostingType为&quot;service&quot;，allowWhileBooting为false
+final ProcessRecord startProcessLocked(String processName,
+        ApplicationInfo info, boolean knownToBeDead, int intentFlags,
+        String hostingType, ComponentName hostingName, boolean allowWhileBooting,
+        boolean isolated, boolean keepIfLarge) &#123;
+    return startProcessLocked(processName, info, knownToBeDead, intentFlags, hostingType,
+            hostingName, allowWhileBooting, isolated, 0 /* isolatedUid */, keepIfLarge,
+            null /* ABI override */, null /* entryPoint */, null /* entryPointArgs */,
+            null /* crashHandler */);
+&#125;
+</code></pre><p>接着调用startProcessLocked:</p>
+<pre><code> //ActivityManagerService.java
+ final ProcessRecord startProcessLocked(String processName, ApplicationInfo info,
+        boolean knownToBeDead, int intentFlags, String hostingType, ComponentName hostingName,
+        boolean allowWhileBooting, boolean isolated, int isolatedUid, boolean keepIfLarge,
+        String abiOverride, String entryPoint, String[] entryPointArgs, Runnable crashHandler) &#123;
+    ProcessRecord app;
+    if (!isolated) &#123;
+        app = getProcessRecordLocked(processName, info.uid, keepIfLarge);
+    &#125; else &#123;
+        // If this is an isolated process, it can&#39;t re-use an existing process.
+        app = null;
+    &#125;
+    //...
+    String hostingNameStr = hostingName != null
+            ? hostingName.flattenToShortString() : null;
+   //...
+   if (app == null) &#123;
+        //构建一个新的的ProcessRecord
+        app = newProcessRecordLocked(info, processName, isolated, isolatedUid);
+        app.crashHandler = crashHandler;
+        mProcessNames.put(processName, app.uid, app);
+        if (isolated) &#123;
+            mIsolatedProcesses.put(app.uid, app);
+        &#125;
+    &#125; 
+    //...
+    startProcessLocked(
+            app, hostingType, hostingNameStr, abiOverride, entryPoint, entryPointArgs);
+    return (app.pid != 0) ? app : null;
+&#125;
+</code></pre><p>处理进程已经存在的情况，构建新的ProcessRecord，startProcessLocked开启进程:</p>
+<pre><code> private final void startProcessLocked(ProcessRecord app, String hostingType,
+        String hostingNameStr, String abiOverride, String entryPoint, String[] entryPointArgs) &#123;
+    //...
+    try &#123;
+        int uid = app.uid;
+        int[] gids = null;
+        int mountExternal = Zygote.MOUNT_EXTERNAL_NONE;
+        if (!app.isolated) &#123;
+            //...
+        &#125;
+        int debugFlags = 0;
+        //...
+        boolean isActivityProcess = (entryPoint == null);
+        if (entryPoint == null) entryPoint = &quot;android.app.ActivityThread&quot;;
+        Process.ProcessStartResult startResult = Process.start(entryPoint,
+                app.processName, uid, uid, gids, debugFlags, mountExternal,
+                app.info.targetSdkVersion, app.info.seinfo, requiredAbi, instructionSet,
+                app.info.dataDir, entryPointArgs);
+        //...
+&#125;
+</code></pre><p>调用Process.start开启一个新的进程，新进程的入口点就是android.app.ActivityThread，执行里面的main方法。</p>
+<pre><code>public final class ActivityThread &#123;
+
+    final ApplicationThread mAppThread = new ApplicationThread();
+
+    public static void main(String[] args) &#123;
+        //...
+        Looper.prepareMainLooper();
+        ActivityThread thread = new ActivityThread();
+        thread.attach(false);
+        if (sMainThreadHandler == null) &#123;
+            sMainThreadHandler = thread.getHandler();
+        &#125;
+        Looper.loop();
+        throw new RuntimeException(&quot;Main thread loop unexpectedly exited&quot;);
+    &#125;
+
+     private void attach(boolean system) &#123;
+        //...
+        if (!system) &#123;
+            //...
+            final IActivityManager mgr = ActivityManagerNative.getDefault();
+            try &#123;
+                mgr.attachApplication(mAppThread);
+            &#125; catch (RemoteException ex) &#123;
+                // Ignore
+            &#125;
+            //...
+        &#125; 
+    &#125;
+&#125;
+</code></pre><p>准备主线程的Looper，调用attachApplication通知ActiviyManangerService主线程准备完毕，然后loop开始消息循环。<br>ActivityManagerProxy通过IPC向ActivityManagerService调用attachApplication，并传递mAppThread给ActivityManagerService，mAppThread是一个Binder对象，用于ActivityManagerService向我们发起调用。注意从这里开始已经是在新进程里面执行了。</p>
+<pre><code>class ActivityManagerProxy implements IActivityManager&#123;
+    public void attachApplication(IApplicationThread app) throws RemoteException
+    &#123;
+        Parcel data = Parcel.obtain();
+        Parcel reply = Parcel.obtain();
+        data.writeInterfaceToken(IActivityManager.descriptor);
+        data.writeStrongBinder(app.asBinder());
+        mRemote.transact(ATTACH_APPLICATION_TRANSACTION, data, reply, 0);
+        reply.readException();
+        data.recycle();
+        reply.recycle();
+    &#125;
+&#125;
+</code></pre><p>遂进入到ActivityManagerService:</p>
+<pre><code>@Override
+public final void attachApplication(IApplicationThread thread) &#123;
+    synchronized (this) &#123;
+        int callingPid = Binder.getCallingPid();
+        final long origId = Binder.clearCallingIdentity();
+        attachApplicationLocked(thread, callingPid);
+        Binder.restoreCallingIdentity(origId);
+    &#125;
+&#125;
+
+private final boolean attachApplicationLocked(IApplicationThread thread,
+        int pid) &#123;
+    ProcessRecord app;
+    //MY_PID是ActivityManagerService所在进程的pid
+    if (pid != MY_PID &amp;&amp; pid &gt;= 0) &#123;
+        synchronized (mPidsSelfLocked) &#123;
+            app = mPidsSelfLocked.get(pid);
+        &#125;
+    &#125; else &#123;
+        app = null;
+    &#125;
+    //No pending application record for pid，drop this process
+    if (app == null) &#123;
+      //...
+      return false;
+    &#125;
+//...
+    final String processName = app.processName;
+//...
+    app.makeActive(thread, mProcessStats);
+    app.curAdj = app.setAdj = -100;
+    app.curSchedGroup = app.setSchedGroup = Process.THREAD_GROUP_DEFAULT;
+    app.forcingToForeground = null;
+    updateProcessForegroundLocked(app, false, false);
+    app.hasShownUi = false;
+    app.debugging = false;
+    app.cached = false;
+    app.killedByAm = false;
+//...
+    try&#123;
+        thread.bindApplication(processName, appInfo, providers, app.instrumentationClass,
+                profilerInfo, app.instrumentationArguments, app.instrumentationWatcher,
+                app.instrumentationUiAutomationConnection, testMode, enableOpenGlTrace,
+                isRestrictedBackupMode || !normalMode, app.persistent,
+                new Configuration(mConfiguration), app.compat,
+                getCommonServicesLocked(app.isolated),
+                mCoreSettingsObserver.getCoreSettingsLocked());
+        //用lru更新AMS维护的进程列表
+        updateLruProcessLocked(app, false, null);
+        app.lastRequestedGc = app.lastLowMemory = SystemClock.uptimeMillis();
+    &#125; catch (Exception e) &#123;
+        //...
+        return false;
+    &#125;
+    boolean badApp = false;
+    //...
+    // Find any services that should be running in this process...
+    if (!badApp) &#123;
+        try &#123;
+            didSomething |= mServices.attachApplicationLocked(app, processName);
+        &#125; catch (Exception e) &#123;
+            Slog.wtf(TAG, &quot;Exception thrown starting services in &quot; + app, e);
+            badApp = true;
+        &#125;
+    &#125;
+   //...
+    return true;
+&#125;
+
+</code></pre><p>使用ApplicationThread发起IPC调用bindApplication:</p>
+<pre><code>public final void bindApplication(String processName, ApplicationInfo appInfo,
+                List&lt;ProviderInfo&gt; providers, ComponentName instrumentationName,
+                ProfilerInfo profilerInfo, Bundle instrumentationArgs,
+                IInstrumentationWatcher instrumentationWatcher,
+                IUiAutomationConnection instrumentationUiConnection, int debugMode,
+                boolean enableOpenGlTrace, boolean isRestrictedBackupMode, boolean persistent,
+                Configuration config, CompatibilityInfo compatInfo, Map&lt;String, IBinder&gt; services,
+                Bundle coreSettings) &#123;
+
+            //... init
+
+            IPackageManager pm = getPackageManager();
+            android.content.pm.PackageInfo pi = null;
+            try &#123;
+                pi = pm.getPackageInfo(appInfo.packageName, 0, UserHandle.myUserId());
+            &#125; catch (RemoteException e) &#123;
+            &#125;
+            if (pi != null) &#123;
+               //处理sharedUid的情况
+               //...
+            &#125;
+
+            AppBindData data = new AppBindData();
+            data.processName = processName;
+            data.appInfo = appInfo;
+            data.providers = providers;
+            data.instrumentationName = instrumentationName;
+            data.instrumentationArgs = instrumentationArgs;
+            data.instrumentationWatcher = instrumentationWatcher;
+            data.instrumentationUiAutomationConnection = instrumentationUiConnection;
+            data.debugMode = debugMode;
+            data.enableOpenGlTrace = enableOpenGlTrace;
+            data.restrictedBackupMode = isRestrictedBackupMode;
+            data.persistent = persistent;
+            data.config = config;
+            data.compatInfo = compatInfo;
+            data.initProfilerInfo = profilerInfo;
+            sendMessage(H.BIND_APPLICATION, data);
+        &#125;
+
+private void sendMessage(int what, Object obj) &#123;
+        sendMessage(what, obj, 0, 0, false);
+&#125;
+
+final H mH = new H();
+
+private void sendMessage(int what, Object obj, int arg1, int arg2, boolean async) &#123;
+    Message msg = Message.obtain();
+    msg.what = what;
+    msg.obj = obj;
+    msg.arg1 = arg1;
+    msg.arg2 = arg2;
+    if (async) &#123;
+        msg.setAsynchronous(true);
+    &#125;
+    mH.sendMessage(msg);
+&#125;
+</code></pre><p>主线程的Looper前面已经在ActivityThread主线程里面初始化了，然后然后向Handler发消息实现进程切换(因为bindApplication是在客户端Binder线程池里面调用的)。</p>
+<pre><code>  private class H extends Handler &#123;
+     public void handleMessage(Message msg) &#123;
+        //...
+         case BIND_APPLICATION:
+                    AppBindData data = (AppBindData)msg.obj;
+                    handleBindApplication(data);
+                    break;
+     &#125;
+  &#125;
+</code></pre><p>接着调用ActivityThread的handleBindApplication，主要是然客户端初始化应用程序的一些状态比如时区地域，Instrumentation，LoadedApk等等。</p>
+<pre><code>private void handleBindApplication(AppBindData data) &#123;
+    mBoundApplication = data;
+    mConfiguration = new Configuration(data.config);
+    mCompatConfiguration = new Configuration(data.config);
+    //...
+    TimeZone.setDefault(null);
+    //...
+    Locale.setDefault(data.config.locale);
+    //...
+&#125;
+</code></pre><p>再回到ActivityManagerService中的attachApplicationLocked，接着调用ActivieServices的attachApplicationLocked通知客户端启动Service:</p>
+<pre><code>    if (!badApp) &#123;
+        try &#123;
+            didSomething |= mServices.attachApplicationLocked(app, processName);
+        &#125; catch (Exception e) &#123;
+            Slog.wtf(TAG, &quot;Exception thrown starting services in &quot; + app, e);
+            badApp = true;
+        &#125;
+    &#125;
+</code></pre><p>mPendingServices就是前面加入列表的ServiceRecord，过滤要启动的ServiceRecord，调用<br>realStartServiceLocked:</p>
+<pre><code>boolean attachApplicationLocked(ProcessRecord proc, String processName)
+        throws RemoteException &#123;
+    boolean didSomething = false;
+    // Collect any services that are waiting for this process to come up.
+    if (mPendingServices.size() &gt; 0) &#123;
+        ServiceRecord sr = null;
+        try &#123;
+            for (int i=0; i&lt;mPendingServices.size(); i++) &#123;
+                sr = mPendingServices.get(i);
+                //过滤我们客户端当前的进程
+                if (proc != sr.isolatedProc &amp;&amp; (proc.uid != sr.appInfo.uid
+                        || !processName.equals(sr.processName))) &#123;
+                    continue;
+                &#125;
+                mPendingServices.remove(i);
+                i--;
+                proc.addPackage(sr.appInfo.packageName, sr.appInfo.versionCode,
+                        mAm.mProcessStats);
+                realStartServiceLocked(sr, proc, sr.createdFromFg);
+                didSomething = true;
+            &#125;
+        &#125; catch (RemoteException e) &#123;
+            Slog.w(TAG, &quot;Exception in new application when starting service &quot;
+                    - sr.shortName, e);
+            throw e;
+        &#125;
+    &#125;
+
+    if (mRestartingServices.size() &gt; 0) &#123;
+       //处理restart的状态
+       //...
+    &#125;
+    return didSomething;
+&#125;
+</code></pre><p>调用ApplicationThread的scheduleCreateService然客户端创建服务，pendingStarts在放入要执行start操作的列表里面，在执行sendServiceArgsLocked告诉客户端执行onStart:</p>
+<pre><code>private final void realStartServiceLocked(ServiceRecord r,
+        ProcessRecord app, boolean execInFg) throws RemoteException &#123;
+    //..
+    r.app = app;
+    r.restartTime = r.lastActivity = SystemClock.uptimeMillis();
+
+    app.services.add(r);
+    //将Service加入到正在执行的executingServices(ProcessRecord)列表里
+    bumpServiceExecutingLocked(r, execInFg, &quot;create&quot;);
+    mAm.updateLruProcessLocked(app, false, null);
+    mAm.updateOomAdjLocked();
+
+    boolean created = false;
+    try &#123;
+        //...
+        app.thread.scheduleCreateService(r, r.serviceInfo,
+                mAm.compatibilityInfoForPackageLocked(r.serviceInfo.applicationInfo),
+                app.repProcState);
+        //前台进程显示Notification
+        r.postNotification();
+        created = true;
+    &#125; catch (DeadObjectException e) &#123;
+      //...
+  &#125;
+
+    // If the service is in the started state, and there are no
+    // pending arguments, then fake up one so its onStartCommand() will
+    // be called.
+    if (r.startRequested &amp;&amp; r.callStart &amp;&amp; r.pendingStarts.size() == 0) &#123;
+        r.pendingStarts.add(new ServiceRecord.StartItem(r, false, r.makeNextStartId(),
+                null, null));
+    &#125;
+
+    sendServiceArgsLocked(r, execInFg, true);
+    //...
+&#125;
+</code></pre><p>先看ApplicationThread的scheduleCreateService,这里对应的token就是ActivityManagerService创建的ServiceRecord，ServiceInfo是ActivityManagerService为我们解析AndroidManifest的Service标签:</p>
+<pre><code>//ApplicationThread.java
+  public final void scheduleCreateService(IBinder token,
+            ServiceInfo info, CompatibilityInfo compatInfo, int processState) &#123;
+        updateProcessState(processState, false);
+        CreateServiceData s = new CreateServiceData();
+        s.token = token;
+        s.info = info;
+        s.compatInfo = compatInfo;
+
+        sendMessage(H.CREATE_SERVICE, s);
+    &#125;
+</code></pre><p>同样是向Handler发送消息实现进程切换:</p>
+<pre><code>private class H extends Handler &#123;
+    public void handleMessage(Message msg) &#123;
+        //...
+         case CREATE_SERVICE:
+            handleCreateService((CreateServiceData)msg.obj);
+            break;
+        //...
+    &#125;
+&#125;
+</code></pre><p>执行ActivityThread的handleCreateService，实现创建服务并执行onCreate，调用ActivityManagerService的serviceDoneExecuting，onCreate更新下Service的一些状态:</p>
+<pre><code>    private void handleCreateService(CreateServiceData data) &#123;
+        //...
+        //前面已经初始化好的LoadedApk
+        LoadedApk packageInfo = getPackageInfoNoCheck(
+                data.info.applicationInfo, data.compatInfo);
+        Service service = null;
+        try &#123;
+            java.lang.ClassLoader cl = packageInfo.getClassLoader();
+            service = (Service) cl.loadClass(data.info.name).newInstance();
+        &#125; catch (Exception e) &#123;
+            //...
+        &#125;
+
+        try &#123;
+            ContextImpl context = ContextImpl.createAppContext(this, packageInfo);
+            context.setOuterContext(service);
+            //如果新进程没有创建Application则创建
+            Application app = packageInfo.makeApplication(false, mInstrumentation);
+            //初始化Service
+            service.attach(context, this, data.info.name, data.token, app,
+                    ActivityManagerNative.getDefault());
+            service.onCreate();
+            mServices.put(data.token, service);
+            try &#123;
+                ActivityManagerNative.getDefault().serviceDoneExecuting(
+                        data.token, SERVICE_DONE_EXECUTING_ANON, 0, 0);
+            &#125; catch (RemoteException e) &#123;
+                // nothing to do.
+            &#125;
+        &#125; catch (Exception e) &#123;
+           //...
+        &#125;
+    &#125;
+</code></pre><h4 id="onStartCommand"><a href="#onStartCommand" class="headerlink" title="onStartCommand"></a>onStartCommand</h4><p>再回到上面的ActivieServices的sendServiceArgsLocked告诉客户端要执行onStartCommand，将要执行的onStart的参数（例如startId）传回客户端:</p>
+<pre><code>private final void sendServiceArgsLocked(ServiceRecord r, boolean execInFg,
+        boolean oomAdjusted) &#123;
+    //...
+    while (r.pendingStarts.size() &gt; 0) &#123;
+        try &#123;
+            ServiceRecord.StartItem si = r.pendingStarts.remove(0);
+            //...
+            si.deliveredTime = SystemClock.uptimeMillis();
+            r.deliveredStarts.add(si);
+            si.deliveryCount++;
+            //更新正在执行的状态
+            bumpServiceExecutingLocked(r, execInFg, &quot;start&quot;);
+            int flags = 0;
+            if (si.deliveryCount &gt; 1) &#123;
+                flags |= Service.START_FLAG_RETRY;
+            &#125;
+            if (si.doneExecutingCount &gt; 0) &#123;
+                flags |= Service.START_FLAG_REDELIVERY;
+            &#125;
+            r.app.thread.scheduleServiceArgs(r, si.taskRemoved, si.id, flags, si.intent);
+        &#125; catch (RemoteException e) &#123;
+            //...
+        &#125; 
+    &#125;
+&#125;
+</code></pre><p>接着执行ActivityThread里的scheduleServiceArgs:</p>
+<pre><code>public final void scheduleServiceArgs(IBinder token, boolean taskRemoved, int startId,
+            int flags ,Intent args) &#123;
+            ServiceArgsData s = new ServiceArgsData();
+            s.token = token;
+            s.taskRemoved = taskRemoved;
+            s.startId = startId;
+            s.flags = flags;
+            s.args = args;
+
+            sendMessage(H.SERVICE_ARGS, s);
+        &#125;
+</code></pre><p>同样发送消息给主线程执行handleServiceArgs，mServices为客户端维护的Service列表:</p>
+<pre><code>private void handleServiceArgs(ServiceArgsData data) &#123;
+    Service s = mServices.get(data.token);
+    if (s != null) &#123;
+        try &#123;
+            if (data.args != null) &#123;
+                data.args.setExtrasClassLoader(s.getClassLoader());
+                data.args.prepareToEnterProcess();
+            &#125;
+            int res;
+            if (!data.taskRemoved) &#123;
+                res = s.onStartCommand(data.args, data.flags, data.startId);
+            &#125; else &#123;
+                s.onTaskRemoved(data.args);
+                res = Service.START_TASK_REMOVED_COMPLETE;
+            &#125;
+            //...
+            try &#123;
+                ActivityManagerNative.getDefault().serviceDoneExecuting(
+                        data.token, SERVICE_DONE_EXECUTING_START, data.startId, res);
+            &#125; catch (RemoteException e) &#123;
+                // nothing to do.
+            &#125;
+            ensureJitEnabled();
+        &#125; catch (Exception e) &#123;
+            ///...
+        &#125;
+    &#125;
+&#125;
+</code></pre><p>onStartCommand执行完后会返回一个参数，用于控制Service的一些行为，例如进程被杀死之后Service的行为。<br>随后调用serviceDoneExecuting告诉ActivityManagerService，onStart已经执行完了，ActivityManagerService再更新一些状态。</p>
+<p>就这样Service就运行起来了。</p>
+<h4 id="onDestroy"><a href="#onDestroy" class="headerlink" title="onDestroy"></a>onDestroy</h4><p>停止服务有两种方式，一种是在程序外面通过ContextImpl的接口，stopService来停止，另一种是在Service里面调用stop来停止。</p>
+<p>通过ContextImpl接口:</p>
+<pre><code>class ContextImpl extends Context &#123; 
+    @Override
+    public boolean stopService(Intent service) &#123;
+        warnIfCallingFromSystemProcess();
+        return stopServiceCommon(service, mUser);
+    &#125;
+
+    private boolean stopServiceCommon(Intent service, UserHandle user) &#123;
+        try &#123;
+            validateServiceIntent(service);//系统进程调用打印日志
+            service.prepareToLeaveProcess();
+            int res = ActivityManagerNative.getDefault().stopService(
+                mMainThread.getApplicationThread(), service,
+                service.resolveTypeIfNeeded(getContentResolver()), user.getIdentifier());
+            //...
+            return res != 0;
+        &#125; catch (RemoteException e) &#123;
+            return false;
+        &#125;
+    &#125;   
+&#125;
+</code></pre><p>接着向ActivityManagerService发起IPC调用，进入ActivityManagerService里面的stopService:</p>
+<pre><code>@Override
+public int stopService(IApplicationThread caller, Intent service,
+        String resolvedType, int userId) &#123;
+    //...
+    synchronized(this) &#123;
+        return mServices.stopServiceLocked(caller, service, resolvedType, userId);
+    &#125;
+&#125;
+</code></pre><p>接着调用ActivieServices的stopServiceLocked方法:</p>
+<pre><code>int stopServiceLocked(IApplicationThread caller, Intent service,
+        String resolvedType, int userId) &#123;
+    //...
+
+    //找到正在运行的ServiceRecord
+    // If this service is active, make sure it is stopped.
+    ServiceLookupResult r = retrieveServiceLocked(service, resolvedType,
+            Binder.getCallingPid(), Binder.getCallingUid(), userId, false, false);
+    if (r != null) &#123;
+        if (r.record != null) &#123;
+            final long origId = Binder.clearCallingIdentity();
+            try &#123;
+                stopServiceLocked(r.record);
+            &#125; finally &#123;
+                Binder.restoreCallingIdentity(origId);
+            &#125;
+            return 1;
+        &#125;
+        return -1;
+    &#125;
+    return 0;
+&#125;
+</code></pre><p>找到正在运行的ServiceRecord，调用stopServiceLocked进行下一步操作:</p>
+<pre><code>private void stopServiceLocked(ServiceRecord service) &#123;
+    //...
+    service.startRequested = false;
+    service.callStart = false;
+    bringDownServiceIfNeededLocked(service, false, false);
+&#125;
+
+private final void bringDownServiceIfNeededLocked(ServiceRecord r, boolean knowConn,
+    boolean hasConn) &#123;
+//如果判断服务处于被绑定的状态，则不会停止服务
+if (isServiceNeeded(r, knowConn, hasConn)) &#123;
+    return;
+&#125;
+// Are we in the process of launching?
+if (mPendingServices.contains(r)) &#123;
+    return;
+&#125;
+bringDownServiceLocked(r);
+&#125;
+</code></pre><p>如果服务有绑定的客户端，或者即将启动的服务里面包含了要停止的服务，则直接返回，否则调用bringDownServiceLocked进行下一步处理:</p>
+<pre><code>private final void bringDownServiceLocked(ServiceRecord r) &#123;
+    // Report to all of the connections that the service is no longer
+    // available.
+    for (int conni=r.connections.size()-1; conni&gt;=0; conni--) &#123;
+       //...
+    &#125;
+
+    // Tell the service that it has been unbound.
+    if (r.app != null &amp;&amp; r.app.thread != null) &#123;
+        for (int i=r.bindings.size()-1; i&gt;=0; i--) &#123;
+           //...
+            r.app.thread.scheduleUnbindService(r,
+                                ibr.intent.getIntent());
+           //...
+        &#125;
+    &#125;
+    r.destroyTime = SystemClock.uptimeMillis();
+
+    final ServiceMap smap = getServiceMap(r.userId);
+    smap.mServicesByName.remove(r.name);
+    smap.mServicesByIntent.remove(r.intent);
+    r.totalRestartCount = 0;
+    unscheduleServiceRestartLocked(r, 0, true);
+
+    // Also make sure it is not on the pending list.
+    for (int i=mPendingServices.size()-1; i&gt;=0; i--) &#123;
+        if (mPendingServices.get(i) == r) &#123;
+            mPendingServices.remove(i);
+        &#125;
+    &#125;
+
+    r.cancelNotification();
+    r.isForeground = false;
+    r.foregroundId = 0;
+    r.foregroundNoti = null;
+
+    // Clear start entries.
+    r.clearDeliveredStartsLocked();
+    r.pendingStarts.clear();
+
+    if (r.app != null) &#123;
+        r.app.services.remove(r);
+        if (r.app.thread != null) &#123;
+            updateServiceForegroundLocked(r.app, false);
+            try &#123;
+                bumpServiceExecutingLocked(r, false, &quot;destroy&quot;);
+                mDestroyingServices.add(r);
+                r.destroying = true;
+                r.app.thread.scheduleStopService(r);
+            &#125; catch (Exception e) &#123;
+               //...
+            &#125;
+        &#125;
+    &#125;
+    //...
+&#125;
+</code></pre><p>由于没有绑定服务，则不会执行服务解绑scheduleUnbindService的操作。这一步主要就是更新ServiceRecord的一些状态，将ServiceRecord加入mDestroyingServices里后面用到，然后调用客户端的ApplicationThread#scheduleStopService，这里的token为对应的ServiceRecord:</p>
+<pre><code> private class ApplicationThread extends ApplicationThreadNative &#123;
+    public final void scheduleStopService(IBinder token) &#123;
+        sendMessage(H.STOP_SERVICE, token);
+    &#125;
+ &#125;
+</code></pre><p>同样向Handler发送消息切换进程执行AcitivtyThread#handleStopService:</p>
+<pre><code>private void handleStopService(IBinder token) &#123;
+    Service s = mServices.remove(token);
+    if (s != null) &#123;
+        try &#123;
+            s.onDestroy();
+            Context context = s.getBaseContext();
+            if (context instanceof ContextImpl) &#123;
+                final String who = s.getClassName();
+                //清除掉使用这个Context创建的资源，比如注册的广播，绑定的服务(直接抛异常)
+                ((ContextImpl) context).scheduleFinalCleanup(who, &quot;Service&quot;);
+            &#125;
+            try &#123;
+                ActivityManagerNative.getDefault().serviceDoneExecuting(
+                        token, SERVICE_DONE_EXECUTING_STOP, 0, 0);
+            &#125; catch (RemoteException e) &#123;
+               //...
+            &#125;
+        &#125; catch (Exception e) &#123;
+           //...
+        &#125;
+    &#125; 
+    //...
+&#125;
+</code></pre><p>首先从客户端保存的mServices里面取出对应的Service实例，调用onDestroy，之后调用scheduleFinalCleanup清除掉使用这个Context创建的资源，比如注册的广播，绑定的服务。之后调用ActivityManagerProxy#serviceDoneExecuting，告诉ActivityManagerService已经结束执行完onDestroy。然后就进入到ActivityManagerService#serviceDoneExecuting:</p>
+<pre><code>public void serviceDoneExecuting(IBinder token, int type, int startId, int res) &#123;
+    synchronized(this) &#123;
+       //...验证token是否是ServiceRecord
+        mServices.serviceDoneExecutingLocked((ServiceRecord)token, type, startId, res);
+    &#125;
+&#125;
+</code></pre><p>接着执行ActiveServices#serviceDoneExecutingLocked进行下一步操作:</p>
+<pre><code>void serviceDoneExecutingLocked(ServiceRecord r, int type, int startId, int res) &#123;
+    boolean inDestroying = mDestroyingServices.contains(r);
+    if (r != null) &#123;
+        if (type == ActivityThread.SERVICE_DONE_EXECUTING_START) &#123;
+           //...
+        &#125; else if (type == ActivityThread.SERVICE_DONE_EXECUTING_STOP) &#123;
+            if (!inDestroying) &#123;
+               //...貌似没有做什么操作
+            &#125; else if (r.executeNesting != 1) &#123;
+               //..
+                r.executeNesting = 1;
+            &#125;
+        &#125;
+        final long origId = Binder.clearCallingIdentity();
+        //这里的isDestroying为true
+        serviceDoneExecutingLocked(r, inDestroying, inDestroying);
+        Binder.restoreCallingIdentity(origId);
+    &#125; //...
+&#125;
+</code></pre><p>最后执行serviceDoneExecutingLocked，做Service的收尾工作，例如清除ServiceRecord持有的IntentBindRecord，从ProcessRecord里面清除ServiceRecord等。</p>
+<p>另外一种方式就是在Service里面stop:</p>
+<pre><code>public abstract class Service extends ContextWrapper implements ComponentCallbacks2 &#123;
+
+    private IActivityManager mActivityManager;
+
+    public final void stopSelf() &#123;
+        stopSelf(-1);
+    &#125;
+
+    public final void stopSelf(int startId) &#123;
+        if (mActivityManager == null) &#123;
+            return;
+        &#125;
+        try &#123;
+            mActivityManager.stopServiceToken(
+                    new ComponentName(this, mClassName), mToken, startId);
+        &#125; catch (RemoteException ex) &#123;
+        &#125;
+    &#125;
+&#125;
+</code></pre><p>mActivityManager就为Service启动过程中，调用attach初始化的ActivityManagerProxy，所以就通过Binder调用ActivityManagerService的stopServiceToken:</p>
+<pre><code>@Override
+public boolean stopServiceToken(ComponentName className, IBinder token,
+        int startId) &#123;
+    synchronized(this) &#123;
+        return mServices.stopServiceTokenLocked(className, token, startId);
+    &#125;
+&#125;
+</code></pre><p>继续调用ActivieServices#stopServiceTokenLocked:</p>
+<pre><code>boolean stopServiceTokenLocked(ComponentName className, IBinder token,
+        int startId) &#123;
+    ServiceRecord r = findServiceLocked(className, token, UserHandle.getCallingUserId());
+    if (r != null) &#123;
+        //startId小于零就直接结束
+        if (startId &gt;= 0) &#123;
+            //找到执行过的StartItem
+            ServiceRecord.StartItem si = r.findDeliveredStart(startId, false);
+            if (si != null) &#123;
+                while (r.deliveredStarts.size() &gt; 0) &#123;
+                    ServiceRecord.StartItem cur = r.deliveredStarts.remove(0);
+                    cur.removeUriPermissionsLocked();
+                    if (cur == si) &#123;
+                        break;
+                    &#125;
+                &#125;
+            &#125;
+
+            //如果最后一次启动的startId不等于传进来的startId则不结束Service
+            if (r.getLastStartId() != startId) &#123;
+                return false;
+            &#125;
+            //...
+        &#125;
+
+        r.startRequested = false;
+        //...
+        r.callStart = false;
+        final long origId = Binder.clearCallingIdentity();
+        bringDownServiceIfNeededLocked(r, false, false);
+        Binder.restoreCallingIdentity(origId);
+        return true;
+    &#125;
+    return false;
+&#125;
+</code></pre><p>如果传进来的startId不等于最后一次启动的startId则不会销毁Service，IntentService就是利用了这个特性来实现顺序执行任务。<br>如果startId小于零则直接调用bringDownServiceIfNeededLocked，就和上面在Service外面stopService流程一样了。</p>
+
+
+
+
+</body>
+</html>
